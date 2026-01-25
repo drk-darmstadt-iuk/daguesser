@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
 import { SignIn } from "@/app/SignIn";
+import { api } from "../convex/_generated/api";
 
 export default function Home() {
   const tasks = useQuery(api.tasks.get);
