@@ -9,8 +9,12 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as games from "../games.js";
+import type * as guesses from "../guesses.js";
 import type * as http from "../http.js";
-import type * as tasks from "../tasks.js";
+import type * as leaderboard from "../leaderboard.js";
+import type * as rounds from "../rounds.js";
+import type * as teams from "../teams.js";
 
 import type {
   ApiFromModules,
@@ -20,8 +24,12 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  games: typeof games;
+  guesses: typeof guesses;
   http: typeof http;
-  tasks: typeof tasks;
+  leaderboard: typeof leaderboard;
+  rounds: typeof rounds;
+  teams: typeof teams;
 }>;
 
 /**
