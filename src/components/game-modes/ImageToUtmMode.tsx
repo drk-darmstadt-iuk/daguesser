@@ -1,10 +1,13 @@
 "use client";
 
+import { AnswerComparison } from "@/components/AnswerComparison";
 import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
+import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
+import { LocationRevealCard } from "@/components/LocationRevealCard";
+import { RoundImage } from "@/components/RoundImage";
 import { UtmInput } from "@/components/UtmInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatUtmMeters } from "@/lib/utm-helpers";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
@@ -25,13 +28,7 @@ export function ImageToUtmShowing({
 
   return (
     <>
-      <Card className="w-full max-w-2xl overflow-hidden">
-        <img
-          src={imageUrl}
-          alt="Zu erratender Ort"
-          className="w-full h-auto max-h-[50vh] object-contain"
-        />
-      </Card>
+      <RoundImage src={imageUrl} size="lg" withCard />
 
       <Card className="w-full max-w-md">
         <CardContent className="pt-6 text-center">
@@ -62,15 +59,7 @@ export function ImageToUtmGuessing({
 
   return (
     <>
-      {imageUrl && (
-        <Card className="w-full max-w-2xl overflow-hidden">
-          <img
-            src={imageUrl}
-            alt="Zu erratender Ort"
-            className="w-full h-auto max-h-[40vh] object-contain"
-          />
-        </Card>
-      )}
+      {imageUrl && <RoundImage src={imageUrl} size="md" withCard />}
 
       {countdownEndsAt && (
         <CountdownTimer
@@ -121,102 +110,13 @@ export function ImageToUtmReveal({
   const correctNorthing = location.utmNorthing ?? 0;
 
   return (
-    <Card className="w-full max-w-md bg-card/80">
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-2 gap-4">
-          <AnswerColumn
-            label="Deine Antwort"
-            easting={guessResult?.guessedUtmEasting}
-            northing={guessResult?.guessedUtmNorthing}
-            isCorrect={false}
-          />
-          <AnswerColumn
-            label="Richtig"
-            easting={correctEasting}
-            northing={correctNorthing}
-            isCorrect={true}
-          />
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-border text-center">
-          <p className="text-sm text-muted-foreground">Ort</p>
-          <h3 className="text-lg font-bold text-secondary">{location.name}</h3>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function GuessSubmittedCard(): React.ReactElement {
-  return (
-    <Card className="w-full max-w-md">
-      <CardContent className="pt-6 text-center">
-        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-correct/20 flex items-center justify-center">
-          <svg
-            className="w-6 h-6 text-correct"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            aria-label="Haekchen"
-            role="img"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-        <p className="font-semibold text-correct">Antwort abgegeben!</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Warte auf die Aufloesung...
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface AnswerColumnProps {
-  label: string;
-  easting: number | undefined;
-  northing: number | undefined;
-  isCorrect: boolean;
-}
-
-function AnswerColumn({
-  label,
-  easting,
-  northing,
-  isCorrect,
-}: AnswerColumnProps): React.ReactElement {
-  const hasAnswer = easting !== undefined && northing !== undefined;
-
-  return (
-    <div className="text-center">
-      <p className="text-sm text-muted-foreground mb-2">{label}</p>
-      {hasAnswer ? (
-        <div className="font-mono text-lg">
-          <div className="text-muted-foreground">
-            E{" "}
-            <span
-              className={
-                isCorrect ? "text-correct font-bold" : "text-foreground"
-              }
-            >
-              {formatUtmMeters(easting)}
-            </span>
-          </div>
-          <div className="text-muted-foreground">
-            N{" "}
-            <span
-              className={
-                isCorrect ? "text-correct font-bold" : "text-foreground"
-              }
-            >
-              {formatUtmMeters(northing)}
-            </span>
-          </div>
-        </div>
-      ) : (
-        <p className="text-muted-foreground text-sm">Keine Antwort</p>
-      )}
-    </div>
+    <LocationRevealCard locationName={location.name}>
+      <AnswerComparison
+        guessedEasting={guessResult?.guessedUtmEasting}
+        guessedNorthing={guessResult?.guessedUtmNorthing}
+        correctEasting={correctEasting}
+        correctNorthing={correctNorthing}
+      />
+    </LocationRevealCard>
   );
 }

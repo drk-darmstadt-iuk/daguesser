@@ -2,6 +2,7 @@
 
 import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
 import { LeaderboardBeamer } from "@/components/Leaderboard";
+import { RoundImage } from "@/components/RoundImage";
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { extractLocationUtm } from "@/lib/utm-helpers";
 import { GuessProgress } from "./GuessProgress";
@@ -96,13 +97,7 @@ function BeamerShowingContent({
   return (
     <>
       {mode === "imageToUtm" && location?.imageUrls?.[0] && (
-        <div className="flex justify-center">
-          <img
-            src={location.imageUrls[0]}
-            alt="Ort"
-            className="max-h-[60vh] rounded-xl shadow-2xl"
-          />
-        </div>
+        <RoundImage src={location.imageUrls[0]} size="xl" alt="Ort" />
       )}
 
       {mode === "utmToLocation" && (
@@ -149,12 +144,8 @@ function BeamerGuessingContent({
   return (
     <>
       {mode === "imageToUtm" && location?.imageUrls?.[0] && (
-        <div className="flex justify-center mb-8">
-          <img
-            src={location.imageUrls[0]}
-            alt="Ort"
-            className="max-h-[40vh] rounded-xl shadow-2xl"
-          />
+        <div className="mb-8">
+          <RoundImage src={location.imageUrls[0]} size="md" alt="Ort" />
         </div>
       )}
 

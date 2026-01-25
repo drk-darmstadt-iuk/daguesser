@@ -1,5 +1,5 @@
-export type { GameMode } from "./GameModeRenderer";
 export { GameModeRenderer } from "./GameModeRenderer";
+export type { GameMode } from "@/types/game";
 export type {
   GuessInputActions,
   GuessInputState,

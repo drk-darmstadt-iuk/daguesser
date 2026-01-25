@@ -1,6 +1,8 @@
 "use client";
 
 import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
+import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
+import { LocationRevealCard } from "@/components/LocationRevealCard";
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { Card, CardContent } from "@/components/ui/card";
 import type {
@@ -93,38 +95,5 @@ interface UtmToLocationRevealProps extends GameModeRevealProps {}
 export function UtmToLocationReveal({
   location,
 }: UtmToLocationRevealProps): React.ReactElement {
-  return (
-    <Card className="w-full max-w-md bg-card/80">
-      <CardContent className="pt-6 text-center">
-        <p className="text-sm text-muted-foreground">Ort</p>
-        <h3 className="text-lg font-bold text-secondary">{location.name}</h3>
-      </CardContent>
-    </Card>
-  );
-}
-
-function GuessSubmittedCard(): React.ReactElement {
-  return (
-    <Card className="w-full max-w-md">
-      <CardContent className="pt-6 text-center">
-        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-correct/20 flex items-center justify-center">
-          <svg
-            className="w-6 h-6 text-correct"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            aria-label="Haekchen"
-            role="img"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-        <p className="font-semibold text-correct">Antwort abgegeben!</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Warte auf die Aufloesung...
-        </p>
-      </CardContent>
-    </Card>
-  );
+  return <LocationRevealCard locationName={location.name} />;
 }

@@ -17,8 +17,7 @@ import {
   UtmToLocationReveal,
   UtmToLocationShowing,
 } from "./UtmToLocationMode";
-
-export type GameMode = "imageToUtm" | "utmToLocation";
+import type { GameMode } from "@/types/game";
 
 interface GameModeRendererProps {
   mode: GameMode;

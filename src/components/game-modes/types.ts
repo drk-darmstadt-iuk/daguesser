@@ -1,47 +1,36 @@
 /**
- * Shared types for game mode components
+ * Types for game mode components (player view).
+ *
+ * Re-exports shared types and defines player-specific prop interfaces.
  */
 
-export type RoundStatus =
-  | "pending"
-  | "showing"
-  | "guessing"
-  | "reveal"
-  | "completed";
+export type {
+  GameMode,
+  GuessInputActions,
+  GuessInputState,
+  GuessResult,
+  LocationData,
+  RoundStatus,
+} from "@/types/game";
 
-export interface LocationData {
-  name: string;
-  utmZone?: string;
-  utmEasting?: number;
-  utmNorthing?: number;
-  imageUrls?: string[];
-}
+import type {
+  GuessInputActions,
+  GuessInputState,
+  GuessResult,
+  LocationData,
+} from "@/types/game";
 
-export interface GuessInputState {
-  eastingInput: string;
-  northingInput: string;
-  isSubmitting: boolean;
-  submitError: string | null;
-}
-
-export interface GuessInputActions {
-  setEastingInput: (value: string) => void;
-  setNorthingInput: (value: string) => void;
-  handleSubmit: () => Promise<void>;
-}
-
-export interface GuessResult {
-  guessedUtmEasting?: number;
-  guessedUtmNorthing?: number;
-  score?: number;
-  distanceMeters?: number | null;
-}
-
+/**
+ * Props for game mode "showing" phase (before countdown starts).
+ */
 export interface GameModeShowingProps {
   location: LocationData;
   timeLimit: number;
 }
 
+/**
+ * Props for game mode "guessing" phase (countdown active).
+ */
 export interface GameModeGuessingProps {
   location: LocationData;
   countdownEndsAt: number | null;
@@ -51,6 +40,9 @@ export interface GameModeGuessingProps {
   inputActions: GuessInputActions;
 }
 
+/**
+ * Props for game mode "reveal" phase (showing correct answer).
+ */
 export interface GameModeRevealProps {
   location: LocationData;
   guessResult: GuessResult | null;
