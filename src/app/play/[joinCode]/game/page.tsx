@@ -421,42 +421,95 @@ export default function TeamGame({
         {(currentRound.status === "reveal" ||
           currentRound.status === "completed") && (
           <>
-            {/* Correct answer */}
+            {/* Comparison: Your answer vs Correct answer */}
             {currentRound.location && (
               <Card className="w-full max-w-md bg-card/80">
-                <CardContent className="pt-6 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Richtige Antwort
-                  </p>
-                  <h3 className="text-xl font-bold text-secondary mb-2">
-                    {currentRound.location.name}
-                  </h3>
-                  <UtmDisplay
-                    utmZone={getLocationUtm().utmZone}
-                    easting={getLocationUtm().utmEasting}
-                    northing={getLocationUtm().utmNorthing}
-                    size="sm"
-                    highlightLast3={false}
-                  />
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Team's answer */}
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Deine Antwort
+                      </p>
+                      {myGuessResult?.guessedUtmEasting !== undefined &&
+                      myGuessResult?.guessedUtmNorthing !== undefined ? (
+                        <div className="font-mono text-lg">
+                          <div className="text-muted-foreground">
+                            E{" "}
+                            <span className="text-foreground">
+                              {String(
+                                Math.floor(myGuessResult.guessedUtmEasting) % 1000,
+                              ).padStart(3, "0")}
+                            </span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            N{" "}
+                            <span className="text-foreground">
+                              {String(
+                                Math.floor(myGuessResult.guessedUtmNorthing) % 1000,
+                              ).padStart(3, "0")}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-sm">
+                          Keine Antwort
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Correct answer */}
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Richtig
+                      </p>
+                      <div className="font-mono text-lg">
+                        <div className="text-muted-foreground">
+                          E{" "}
+                          <span className="text-correct font-bold">
+                            {String(
+                              Math.floor(getLocationUtm().utmEasting) % 1000,
+                            ).padStart(3, "0")}
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground">
+                          N{" "}
+                          <span className="text-correct font-bold">
+                            {String(
+                              Math.floor(getLocationUtm().utmNorthing) % 1000,
+                            ).padStart(3, "0")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location name */}
+                  <div className="mt-4 pt-4 border-t border-border text-center">
+                    <p className="text-sm text-muted-foreground">Ort</p>
+                    <h3 className="text-lg font-bold text-secondary">
+                      {currentRound.location.name}
+                    </h3>
+                  </div>
                 </CardContent>
               </Card>
             )}
 
             {/* My result */}
-            {myGuessResult ? (
+            {myGuessResult?.score !== undefined ? (
               <RoundScoreResult
                 score={myGuessResult.score}
-                distanceMeters={myGuessResult.distanceMeters}
+                distanceMeters={myGuessResult.distanceMeters ?? 0}
                 rating={
-                  myGuessResult.distanceMeters <= 10
+                  (myGuessResult.distanceMeters ?? 0) <= 10
                     ? "perfect"
-                    : myGuessResult.distanceMeters <= 50
+                    : (myGuessResult.distanceMeters ?? 0) <= 50
                       ? "excellent"
-                      : myGuessResult.distanceMeters <= 200
+                      : (myGuessResult.distanceMeters ?? 0) <= 200
                         ? "good"
-                        : myGuessResult.distanceMeters <= 500
+                        : (myGuessResult.distanceMeters ?? 0) <= 500
                           ? "fair"
-                          : myGuessResult.distanceMeters <= 2000
+                          : (myGuessResult.distanceMeters ?? 0) <= 2000
                             ? "poor"
                             : "miss"
                 }
