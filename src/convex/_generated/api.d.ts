@@ -13,6 +13,7 @@ import type * as games from "../games.js";
 import type * as guesses from "../guesses.js";
 import type * as http from "../http.js";
 import type * as leaderboard from "../leaderboard.js";
+import type * as lib_scoring from "../lib/scoring.js";
 import type * as rounds from "../rounds.js";
 import type * as teams from "../teams.js";
 
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   guesses: typeof guesses;
   http: typeof http;
   leaderboard: typeof leaderboard;
+  "lib/scoring": typeof lib_scoring;
   rounds: typeof rounds;
   teams: typeof teams;
 }>;

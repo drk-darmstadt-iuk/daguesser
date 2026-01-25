@@ -1,6 +1,6 @@
+import { getAuthSessionId, getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { auth } from "./auth";
 
 /**
  * Join a game as a team
@@ -21,12 +21,12 @@ export const join = mutation({
     }
 
     // Get the session ID for anonymous auth
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) {
       throw new Error("Must be authenticated (anonymous or OAuth)");
     }
 
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
 
     // Find the game
     const game = await ctx.db
@@ -95,7 +95,7 @@ export const join = mutation({
 export const getMyTeam = query({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) return null;
 
     const team = await ctx.db
@@ -164,7 +164,7 @@ export const updateName = mutation({
       throw new Error("Team name must be 50 characters or less");
     }
 
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) {
       throw new Error("Must be authenticated");
     }
@@ -209,7 +209,7 @@ export const updateName = mutation({
 export const heartbeat = mutation({
   args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) {
       throw new Error("Must be authenticated");
     }
@@ -238,7 +238,7 @@ export const heartbeat = mutation({
 export const setInactive = mutation({
   args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) {
       throw new Error("Must be authenticated");
     }
@@ -267,7 +267,7 @@ export const setInactive = mutation({
 export const remove = mutation({
   args: { teamId: v.id("teams") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }

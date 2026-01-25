@@ -1,3 +1,4 @@
+import { getAuthSessionId, getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { QueryCtx } from "./_generated/server";
 import { query } from "./_generated/server";
@@ -14,6 +15,42 @@ export interface LeaderboardEntry {
     score: number;
     distanceMeters: number;
   }>;
+}
+
+/**
+ * Check if the current user has access to view the leaderboard for a game.
+ * Access is granted if:
+ * - The user is the moderator of the game, OR
+ * - The user is a team member in the game
+ */
+async function checkLeaderboardAccess(
+  ctx: QueryCtx,
+  gameId: Id<"games">,
+): Promise<boolean> {
+  const game = await ctx.db.get(gameId);
+  if (!game) return false;
+
+  // Check if user is the moderator
+  const userId = await getAuthUserId(ctx);
+  if (userId && game.moderatorId === userId) {
+    return true;
+  }
+
+  // Check if user is a team member in this game
+  const sessionId = await getAuthSessionId(ctx);
+  if (sessionId) {
+    const team = await ctx.db
+      .query("teams")
+      .withIndex("by_game_and_session", (q) =>
+        q.eq("gameId", gameId).eq("sessionId", sessionId),
+      )
+      .first();
+    if (team) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -119,6 +156,10 @@ async function getLeaderboardData(
 export const get = query({
   args: { gameId: v.id("games") },
   handler: async (ctx, args): Promise<LeaderboardEntry[]> => {
+    const hasAccess = await checkLeaderboardAccess(ctx, args.gameId);
+    if (!hasAccess) {
+      return [];
+    }
     return getLeaderboardData(ctx, args.gameId);
   },
 });
@@ -132,6 +173,10 @@ export const getTop = query({
     limit: v.number(),
   },
   handler: async (ctx, args) => {
+    const hasAccess = await checkLeaderboardAccess(ctx, args.gameId);
+    if (!hasAccess) {
+      return [];
+    }
     const fullLeaderboard = await getLeaderboardData(ctx, args.gameId);
     return fullLeaderboard.slice(0, args.limit);
   },
@@ -146,6 +191,10 @@ export const getTeamPosition = query({
     teamId: v.id("teams"),
   },
   handler: async (ctx, args) => {
+    const hasAccess = await checkLeaderboardAccess(ctx, args.gameId);
+    if (!hasAccess) {
+      return null;
+    }
     const fullLeaderboard = await getLeaderboardData(ctx, args.gameId);
     const teamEntry = fullLeaderboard.find((e) => e.teamId === args.teamId);
 
@@ -182,6 +231,10 @@ export const getTeamBreakdown = query({
     teamId: v.id("teams"),
   },
   handler: async (ctx, args) => {
+    const hasAccess = await checkLeaderboardAccess(ctx, args.gameId);
+    if (!hasAccess) {
+      return null;
+    }
     const team = await ctx.db.get(args.teamId);
     if (!team) return null;
 

@@ -3,18 +3,18 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type {
-  RoundStatus as RoundStatusValue,
-  GameStatus as GameStatusValue,
-  GameMode as GameModeValue,
+  RoundStatus as RoundStatusType,
+  GameStatus as GameStatusType,
+  GameMode as GameModeType,
 } from "@/types/game";
 
 interface RoundStatusProps {
-  status: RoundStatusValue;
+  status: RoundStatusType;
   className?: string;
 }
 
 const statusConfig: Record<
-  RoundStatusValue,
+  RoundStatusType,
   {
     label: string;
     variant: "default" | "secondary" | "outline" | "destructive";
@@ -59,12 +59,12 @@ export function RoundStatus({ status, className }: RoundStatusProps) {
 }
 
 interface GameStatusProps {
-  status: GameStatusValue;
+  status: GameStatusType;
   className?: string;
 }
 
 const gameStatusConfig: Record<
-  GameStatusValue,
+  GameStatusType,
   {
     label: string;
     variant: "default" | "secondary" | "outline" | "destructive";
@@ -104,12 +104,12 @@ export function GameStatus({ status, className }: GameStatusProps) {
 }
 
 interface GameModeProps {
-  mode: GameModeValue;
+  mode: GameModeType;
   className?: string;
 }
 
 const gameModeConfig: Record<
-  GameModeValue,
+  GameModeType,
   { label: string; description: string }
 > = {
   imageToUtm: {
@@ -135,7 +135,7 @@ export function GameMode({ mode, className }: GameModeProps) {
   );
 }
 
-export function GameModeDescription({ mode }: { mode: GameModeValue }) {
+export function GameModeDescription({ mode }: { mode: GameModeType }) {
   return (
     <span className="text-sm text-muted-foreground">
       {gameModeConfig[mode].description}

@@ -1,62 +1,7 @@
+import { getAuthSessionId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { auth } from "./auth";
-
-// Import scoring utilities - these need to be duplicated here since
-// Convex can't import from outside the convex folder
-// We'll use simplified inline versions
-
-/**
- * Calculate distance between two points using Haversine formula
- */
-function haversineDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number {
-  const R = 6371000; // Earth's radius in meters
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-/**
- * Calculate UTM distance (Euclidean for same zone)
- */
-function utmDistance(e1: number, n1: number, e2: number, n2: number): number {
-  const dE = e2 - e1;
-  const dN = n2 - n1;
-  return Math.sqrt(dE * dE + dN * dN);
-}
-
-/**
- * Calculate score based on distance
- */
-function calculateScore(distanceMeters: number): number {
-  const maxPoints = 1000;
-  const perfectRadius = 10;
-  const zeroPointRadius = 5000;
-
-  if (distanceMeters <= perfectRadius) {
-    return maxPoints;
-  }
-  if (distanceMeters >= zeroPointRadius) {
-    return 0;
-  }
-
-  const normalizedDistance =
-    (distanceMeters - perfectRadius) / (zeroPointRadius - perfectRadius);
-  const score = maxPoints * Math.exp(-5 * normalizedDistance);
-  return Math.round(score);
-}
+import { haversineDistance, utmDistance, calculateScore } from "./lib/scoring";
 
 /**
  * Submit a guess for the current round
@@ -72,7 +17,7 @@ export const submit = mutation({
     longitude: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) {
       throw new Error("Must be authenticated");
     }
@@ -237,7 +182,7 @@ export const getForRound = query({
 export const getMyGuess = query({
   args: { roundId: v.id("rounds") },
   handler: async (ctx, args) => {
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) return null;
 
     const round = await ctx.db.get(args.roundId);
@@ -290,7 +235,7 @@ export const getMyGuess = query({
 export const hasGuessed = query({
   args: { roundId: v.id("rounds") },
   handler: async (ctx, args) => {
-    const sessionId = await auth.getSessionId(ctx);
+    const sessionId = await getAuthSessionId(ctx);
     if (!sessionId) return false;
 
     const round = await ctx.db.get(args.roundId);

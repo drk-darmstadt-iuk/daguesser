@@ -1,6 +1,6 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { auth } from "./auth";
 
 /**
  * Get the current round for a game
@@ -109,7 +109,7 @@ export const listByGame = query({
 export const start = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -160,7 +160,7 @@ export const start = mutation({
 export const startCountdown = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -213,7 +213,7 @@ export const startCountdown = mutation({
 export const reveal = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -280,7 +280,7 @@ export const reveal = mutation({
 export const complete = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -365,7 +365,7 @@ export const updateTimeLimit = mutation({
       throw new Error("Time limit must be between 5 and 300 seconds");
     }
 
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }

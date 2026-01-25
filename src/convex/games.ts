@@ -1,6 +1,6 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { auth } from "./auth";
 import { gameMode, difficulty } from "./schema";
 
 /**
@@ -24,7 +24,7 @@ export const create = mutation({
     defaultTimeLimit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in to create a game");
     }
@@ -88,7 +88,7 @@ export const importLocations = mutation({
     modes: v.array(gameMode),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -213,7 +213,7 @@ export const getByJoinCode = query({
  */
 export const listMyGames = query({
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
     const games = await ctx.db
@@ -232,7 +232,7 @@ export const listMyGames = query({
 export const start = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -278,7 +278,7 @@ export const start = mutation({
 export const pause = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -310,7 +310,7 @@ export const pause = mutation({
 export const resume = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
@@ -342,7 +342,7 @@ export const resume = mutation({
 export const finish = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");
     }
