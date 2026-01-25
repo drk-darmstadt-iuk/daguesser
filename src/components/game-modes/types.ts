@@ -10,6 +10,8 @@ export type {
   GuessInputState,
   GuessResult,
   LocationData,
+  MapInputActions,
+  MapInputState,
   RoundStatus,
 } from "@/types/game";
 
@@ -18,6 +20,8 @@ import type {
   GuessInputState,
   GuessResult,
   LocationData,
+  MapInputActions,
+  MapInputState,
 } from "@/types/game";
 
 /**
@@ -38,6 +42,8 @@ export interface GameModeGuessingProps {
   hasGuessed: boolean;
   inputState: GuessInputState;
   inputActions: GuessInputActions;
+  mapInputState?: MapInputState;
+  mapInputActions?: MapInputActions;
 }
 
 /**

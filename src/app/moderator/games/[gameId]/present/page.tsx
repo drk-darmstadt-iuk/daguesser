@@ -16,6 +16,13 @@ function BeamerView({ gameId }: { gameId: Id<"games"> }): React.ReactElement {
   const game = useQuery(api.games.get, { gameId });
   const currentRound = useQuery(api.rounds.getCurrent, { gameId });
   const leaderboard = useQuery(api.leaderboard.get, { gameId });
+  const roundGuesses = useQuery(
+    api.guesses.getForRound,
+    currentRound?._id &&
+      (currentRound.status === "reveal" || currentRound.status === "completed")
+      ? { roundId: currentRound._id }
+      : "skip",
+  );
 
   if (!game) {
     return (
@@ -54,6 +61,7 @@ function BeamerView({ gameId }: { gameId: Id<"games"> }): React.ReactElement {
                 totalTeams={currentRound.totalTeams ?? 0}
                 allTeamsGuessed={currentRound.allTeamsGuessed}
                 leaderboard={leaderboard ?? []}
+                roundGuesses={roundGuesses ?? []}
               />
             </div>
           </div>

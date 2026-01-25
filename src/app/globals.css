@@ -232,4 +232,49 @@
       opacity: 1;
     }
   }
+
+  /* Pin-drop animation for marker reveal */
+  .pin-drop {
+    animation: pin-drop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes pin-drop {
+    0% {
+      transform: translateY(-20px) scale(0.8);
+      opacity: 0;
+    }
+    60% {
+      transform: translateY(5px) scale(1.1);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Submit button pulse when ready */
+  .submit-ready {
+    animation: submit-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes submit-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 20px 5px rgba(227, 30, 36, 0.2);
+    }
+  }
+
+  /* Distance bar animation */
+  .distance-bar {
+    animation: distance-grow 1s ease-out forwards;
+  }
+
+  @keyframes distance-grow {
+    from {
+      width: 0;
+    }
+  }
 }

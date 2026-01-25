@@ -1,16 +1,24 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
 import { Pause } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { use, useCallback, useEffect, useState } from "react";
 import { GameHeader } from "@/components/GameHeader";
-import type { GuessResult, LocationData } from "@/components/game-modes";
+import type {
+  GuessResult,
+  LocationData,
+  MapInputActions,
+  MapInputState,
+} from "@/components/game-modes";
 import { GameModeRenderer } from "@/components/game-modes";
 import { LeaderboardCompact } from "@/components/Leaderboard";
 import { RoundScoreResult } from "@/components/TeamScoreCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { LeaderboardEntry } from "@/convex/leaderboard";
 import { getDistanceRating } from "@/lib/scoring";
 import {
   calculateFullUtm,
@@ -18,9 +26,6 @@ import {
   extractLocationUtm,
   isUtmInputComplete,
 } from "@/lib/utm-helpers";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import type { LeaderboardEntry } from "@/convex/leaderboard";
 
 interface TeamGameProps {
   params: Promise<{ joinCode: string }>;
@@ -36,6 +41,12 @@ export default function TeamGame({
   const [northingInput, setNorthingInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Map mode state (for utmToLocation)
+  const [guessedPosition, setGuessedPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   const gameByCode = useQuery(api.games.getByJoinCode, {
     joinCode: joinCode.toUpperCase(),
@@ -81,6 +92,7 @@ export default function TeamGame({
     setEastingInput("");
     setNorthingInput("");
     setSubmitError(null);
+    setGuessedPosition(null);
   }, [currentRound?._id]);
 
   useEffect(() => {
@@ -101,23 +113,38 @@ export default function TeamGame({
       }
     }
 
+    if (currentRound.mode === "utmToLocation") {
+      if (!guessedPosition) {
+        setSubmitError("Bitte eine Position auf der Karte auswaehlen");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const baseEasting =
-      currentRound.location?.utmEasting ?? DARMSTADT_DEFAULTS.baseEasting;
-    const baseNorthing =
-      currentRound.location?.utmNorthing ?? DARMSTADT_DEFAULTS.baseNorthing;
-
-    const fullEasting = calculateFullUtm(baseEasting, eastingInput);
-    const fullNorthing = calculateFullUtm(baseNorthing, northingInput);
-
     try {
-      await submitGuess({
-        roundId: currentRound._id as Id<"rounds">,
-        utmEasting: fullEasting,
-        utmNorthing: fullNorthing,
-      });
+      if (currentRound.mode === "imageToUtm") {
+        const baseEasting =
+          currentRound.location?.utmEasting ?? DARMSTADT_DEFAULTS.baseEasting;
+        const baseNorthing =
+          currentRound.location?.utmNorthing ?? DARMSTADT_DEFAULTS.baseNorthing;
+
+        const fullEasting = calculateFullUtm(baseEasting, eastingInput);
+        const fullNorthing = calculateFullUtm(baseNorthing, northingInput);
+
+        await submitGuess({
+          roundId: currentRound._id as Id<"rounds">,
+          utmEasting: fullEasting,
+          utmNorthing: fullNorthing,
+        });
+      } else if (currentRound.mode === "utmToLocation" && guessedPosition) {
+        await submitGuess({
+          roundId: currentRound._id as Id<"rounds">,
+          latitude: guessedPosition.lat,
+          longitude: guessedPosition.lng,
+        });
+      }
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Fehler beim Absenden",
@@ -126,6 +153,14 @@ export default function TeamGame({
       setIsSubmitting(false);
     }
   }
+
+  // Callback for setting guessed position (for map mode)
+  const handleSetGuessedPosition = useCallback(
+    (position: { lat: number; lng: number } | null) => {
+      setGuessedPosition(position);
+    },
+    [],
+  );
 
   if (
     gameByCode === undefined ||
@@ -201,6 +236,15 @@ export default function TeamGame({
               inputActions={{
                 setEastingInput,
                 setNorthingInput,
+                handleSubmit,
+              }}
+              mapInputState={{
+                guessedPosition,
+                isSubmitting,
+                submitError,
+              }}
+              mapInputActions={{
+                setGuessedPosition: handleSetGuessedPosition,
                 handleSubmit,
               }}
             />
@@ -439,6 +483,8 @@ function buildLocationData(
         utmZone?: string;
         utmEasting?: number;
         utmNorthing?: number;
+        latitude?: number;
+        longitude?: number;
         imageUrls?: string[];
       }
     | null
@@ -450,6 +496,8 @@ function buildLocationData(
     utmZone: utmData.utmZone,
     utmEasting: utmData.utmEasting,
     utmNorthing: utmData.utmNorthing,
+    latitude: location?.latitude,
+    longitude: location?.longitude,
     imageUrls: location?.imageUrls,
   };
 }
@@ -458,6 +506,8 @@ function buildGuessResult(
   guessData: {
     guessedUtmEasting?: number;
     guessedUtmNorthing?: number;
+    guessedLatitude?: number;
+    guessedLongitude?: number;
     score?: number;
     distanceMeters?: number | null;
   } | null,
@@ -466,6 +516,8 @@ function buildGuessResult(
   return {
     guessedUtmEasting: guessData.guessedUtmEasting,
     guessedUtmNorthing: guessData.guessedUtmNorthing,
+    guessedLatitude: guessData.guessedLatitude,
+    guessedLongitude: guessData.guessedLongitude,
     score: guessData.score,
     distanceMeters: guessData.distanceMeters,
   };

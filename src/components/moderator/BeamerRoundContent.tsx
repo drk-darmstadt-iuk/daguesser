@@ -2,8 +2,10 @@
 
 import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
 import { LeaderboardBeamer } from "@/components/Leaderboard";
+import { LocationSolutionMap } from "@/components/LocationSolutionMap";
 import { RoundImage } from "@/components/RoundImage";
 import { UtmDisplay } from "@/components/UtmDisplay";
+import { utmToLatLng } from "@/lib/utm";
 import { extractLocationUtm } from "@/lib/utm-helpers";
 import { GuessProgress } from "./GuessProgress";
 import type {
@@ -12,6 +14,16 @@ import type {
   LocationData,
   RoundStatusValue,
 } from "./types";
+
+interface RoundGuess {
+  teamName: string;
+  guessedLatitude?: number;
+  guessedLongitude?: number;
+  guessedUtmEasting?: number;
+  guessedUtmNorthing?: number;
+  score: number;
+  distanceMeters: number;
+}
 
 interface BeamerRoundContentProps {
   status: RoundStatusValue;
@@ -23,6 +35,7 @@ interface BeamerRoundContentProps {
   totalTeams: number;
   allTeamsGuessed?: boolean;
   leaderboard: LeaderboardEntryData[];
+  roundGuesses?: RoundGuess[];
 }
 
 export function BeamerRoundContent({
@@ -35,6 +48,7 @@ export function BeamerRoundContent({
   totalTeams,
   allTeamsGuessed,
   leaderboard,
+  roundGuesses,
 }: BeamerRoundContentProps): React.ReactElement | null {
   if (status === "pending") {
     return <BeamerPendingContent />;
@@ -66,7 +80,12 @@ export function BeamerRoundContent({
 
   if (status === "reveal" || status === "completed") {
     return (
-      <BeamerRevealContent location={location} leaderboard={leaderboard} />
+      <BeamerRevealContent
+        mode={mode}
+        location={location}
+        leaderboard={leaderboard}
+        roundGuesses={roundGuesses}
+      />
     );
   }
 
@@ -181,15 +200,58 @@ function BeamerGuessingContent({
 }
 
 interface BeamerRevealContentProps {
+  mode: GameModeValue;
   location: LocationData | undefined;
   leaderboard: LeaderboardEntryData[];
+  roundGuesses?: RoundGuess[];
 }
 
 function BeamerRevealContent({
+  mode,
   location,
   leaderboard,
+  roundGuesses,
 }: BeamerRevealContentProps): React.ReactElement {
   const utm = extractLocationUtm(location);
+
+  // Get correct position for utmToLocation mode
+  let correctPosition: { lat: number; lng: number } | null = null;
+  if (mode === "utmToLocation") {
+    if (location?.latitude !== undefined && location?.longitude !== undefined) {
+      correctPosition = { lat: location.latitude, lng: location.longitude };
+    } else {
+      // Convert from UTM
+      const zone = Number.parseInt(utm.utmZone.slice(0, -1), 10);
+      const hemisphere = utm.utmZone.slice(-1).toUpperCase() >= "N" ? "N" : "S";
+      const latLng = utmToLatLng({
+        zone,
+        hemisphere: hemisphere as "N" | "S",
+        easting: utm.utmEasting,
+        northing: utm.utmNorthing,
+      });
+      correctPosition = { lat: latLng.latitude, lng: latLng.longitude };
+    }
+  }
+
+  // Build team guesses for map
+  const teamGuesses =
+    mode === "utmToLocation" && roundGuesses
+      ? roundGuesses
+          .filter(
+            (g) =>
+              g.guessedLatitude !== undefined &&
+              g.guessedLongitude !== undefined,
+          )
+          .map((g) => ({
+            teamName: g.teamName,
+            position: {
+              lat: g.guessedLatitude!,
+              lng: g.guessedLongitude!,
+            },
+            score: g.score,
+            distanceMeters: g.distanceMeters,
+          }))
+      : [];
 
   return (
     <>
@@ -197,14 +259,27 @@ function BeamerRevealContent({
       <h3 className="text-5xl font-bold text-secondary mt-4">
         {location?.name ?? "Unbekannt"}
       </h3>
-      <UtmDisplay
-        utmZone={utm.utmZone}
-        easting={utm.utmEasting}
-        northing={utm.utmNorthing}
-        size="lg"
-        highlightLast3={false}
-        className="mx-auto mt-8"
-      />
+
+      {mode === "utmToLocation" && correctPosition ? (
+        <div className="mt-8 w-full max-w-4xl mx-auto">
+          <LocationSolutionMap
+            correctPosition={correctPosition}
+            teamGuesses={teamGuesses}
+            showDistanceLine={false}
+            showUtmGrid
+            className="h-[400px]"
+          />
+        </div>
+      ) : (
+        <UtmDisplay
+          utmZone={utm.utmZone}
+          easting={utm.utmEasting}
+          northing={utm.utmNorthing}
+          size="lg"
+          highlightLast3={false}
+          className="mx-auto mt-8"
+        />
+      )}
 
       {leaderboard.length > 0 && (
         <div className="mt-12 max-w-2xl mx-auto">

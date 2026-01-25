@@ -1,5 +1,6 @@
 "use client";
 
+import type { GameMode } from "@/types/game";
 import {
   ImageToUtmGuessing,
   ImageToUtmReveal,
@@ -10,6 +11,8 @@ import type {
   GuessInputState,
   GuessResult,
   LocationData,
+  MapInputActions,
+  MapInputState,
   RoundStatus,
 } from "./types";
 import {
@@ -17,7 +20,6 @@ import {
   UtmToLocationReveal,
   UtmToLocationShowing,
 } from "./UtmToLocationMode";
-import type { GameMode } from "@/types/game";
 
 interface GameModeRendererProps {
   mode: GameMode;
@@ -29,6 +31,8 @@ interface GameModeRendererProps {
   guessResult: GuessResult | null;
   inputState: GuessInputState;
   inputActions: GuessInputActions;
+  mapInputState?: MapInputState;
+  mapInputActions?: MapInputActions;
 }
 
 /**
@@ -46,6 +50,8 @@ export function GameModeRenderer({
   guessResult,
   inputState,
   inputActions,
+  mapInputState,
+  mapInputActions,
 }: GameModeRendererProps): React.ReactElement | null {
   if (status === "showing") {
     return renderShowingState(mode, location, timeLimit);
@@ -60,6 +66,8 @@ export function GameModeRenderer({
       hasGuessed,
       inputState,
       inputActions,
+      mapInputState,
+      mapInputActions,
     );
   }
 
@@ -93,6 +101,8 @@ function renderGuessingState(
   hasGuessed: boolean,
   inputState: GuessInputState,
   inputActions: GuessInputActions,
+  mapInputState?: MapInputState,
+  mapInputActions?: MapInputActions,
 ): React.ReactElement | null {
   switch (mode) {
     case "imageToUtm":
@@ -115,6 +125,8 @@ function renderGuessingState(
           hasGuessed={hasGuessed}
           inputState={inputState}
           inputActions={inputActions}
+          mapInputState={mapInputState}
+          mapInputActions={mapInputActions}
         />
       );
     default:

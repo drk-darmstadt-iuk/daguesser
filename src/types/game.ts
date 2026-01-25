@@ -38,6 +38,8 @@ export interface LocationData {
   utmZone?: string;
   utmEasting?: number;
   utmNorthing?: number;
+  latitude?: number;
+  longitude?: number;
   imageUrls?: string[];
 }
 
@@ -47,6 +49,8 @@ export interface LocationData {
 export interface GuessResult {
   guessedUtmEasting?: number;
   guessedUtmNorthing?: number;
+  guessedLatitude?: number;
+  guessedLongitude?: number;
   score?: number;
   distanceMeters?: number | null;
 }
@@ -67,6 +71,23 @@ export interface GuessInputState {
 export interface GuessInputActions {
   setEastingInput: (value: string) => void;
   setNorthingInput: (value: string) => void;
+  handleSubmit: () => Promise<void>;
+}
+
+/**
+ * State for map position input (utmToLocation mode).
+ */
+export interface MapInputState {
+  guessedPosition: { lat: number; lng: number } | null;
+  isSubmitting: boolean;
+  submitError: string | null;
+}
+
+/**
+ * Actions for controlling map position input.
+ */
+export interface MapInputActions {
+  setGuessedPosition: (position: { lat: number; lng: number } | null) => void;
   handleSubmit: () => Promise<void>;
 }
 
