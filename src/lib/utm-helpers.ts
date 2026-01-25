@@ -17,7 +17,7 @@ export function formatUtmMeters(coordinate: number): string {
  * Calculates the base (km) value for a UTM coordinate.
  * Example: 477456 -> 477000
  */
-export function getUtmBaseKm(coordinate: number): number {
+function getUtmBaseKm(coordinate: number): number {
   return Math.floor(coordinate / 1000) * 1000;
 }
 

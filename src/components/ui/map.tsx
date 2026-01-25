@@ -200,7 +200,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       setIsStyleLoaded(false);
       setMapInstance(null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Map instance created once on mount, props captured in closure
   }, []);
 
   useEffect(() => {
@@ -326,7 +326,7 @@ function MapMarker({
 
     return markerInstance;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Marker created once on mount, event handlers captured in closure
   }, []);
 
   useEffect(() => {
@@ -338,7 +338,7 @@ function MapMarker({
       marker.remove();
     };
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only re-run when map changes, marker instance is stable
   }, [map]);
 
   if (
@@ -430,7 +430,7 @@ function MarkerPopup({
       .setDOMContent(container);
 
     return popupInstance;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Popup created once on mount
   }, []);
 
   useEffect(() => {
@@ -442,7 +442,7 @@ function MarkerPopup({
     return () => {
       marker.setPopup(null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only re-run when map changes
   }, [map]);
 
   if (popup.isOpen()) {
@@ -509,7 +509,7 @@ function MarkerTooltip({
     }).setMaxWidth("none");
 
     return tooltipInstance;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Tooltip created once on mount
   }, []);
 
   useEffect(() => {
@@ -530,7 +530,7 @@ function MarkerTooltip({
       marker.getElement()?.removeEventListener("mouseleave", handleMouseLeave);
       tooltip.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only re-run when map changes
   }, [map]);
 
   if (tooltip.isOpen()) {
@@ -839,7 +839,7 @@ function MapPopup({
       .setLngLat([longitude, latitude]);
 
     return popupInstance;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Popup created once on mount
   }, []);
 
   useEffect(() => {
@@ -857,7 +857,7 @@ function MapPopup({
         popup.remove();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only re-run when map changes, onClose captured in closure
   }, [map]);
 
   if (popup.isOpen()) {
@@ -983,7 +983,7 @@ function MapRoute({
         // ignore
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Layer/source setup depends only on map load state
   }, [isLoaded, map]);
 
   // When coordinates change, update the source data
@@ -1182,7 +1182,7 @@ function MapClusterLayer<
         // ignore
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Cluster layer setup depends only on map load state and source ID
   }, [isLoaded, map, sourceId]);
 
   // Update source data when data prop changes (only for non-URL data)

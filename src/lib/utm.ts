@@ -250,61 +250,6 @@ export function utmDistance(utm1: UtmCoordinate, utm2: UtmCoordinate): number {
   );
 }
 
-/**
- * Format UTM coordinates for display
- * Returns format like "32U 477 456 / 55 234"
- */
-export function formatUtm(utm: UtmCoordinate): string {
-  const zoneStr = `${utm.zone}${utm.zoneLetter || utm.hemisphere}`;
-  const eastingKm = Math.floor(utm.easting / 1000);
-  const eastingM = Math.floor(utm.easting % 1000);
-  const northingKm = Math.floor(utm.northing / 1000);
-  const northingM = Math.floor(utm.northing % 1000);
-
-  return `${zoneStr} ${eastingKm} ${String(eastingM).padStart(3, "0")} / ${northingKm} ${String(northingM).padStart(3, "0")}`;
-}
-
-/**
- * Format UTM for the game display (last 3 digits only)
- * Returns format like "477 456" for easting or "234" for the meters part
- */
-export function formatUtmShort(
-  easting: number,
-  northing: number,
-): { easting3: string; northing3: string } {
-  return {
-    easting3: String(Math.floor(easting) % 1000).padStart(3, "0"),
-    northing3: String(Math.floor(northing) % 1000).padStart(3, "0"),
-  };
-}
-
-/**
- * Parse UTM string input (3 digits for Easting, 3 for Northing)
- * baseEasting/baseNorthing are the km values (e.g., 477000, 5523000)
- */
-export function parseUtmInput(
-  eastingInput: string,
-  northingInput: string,
-  baseEasting: number,
-  baseNorthing: number,
-): { easting: number; northing: number } | null {
-  const e = Number.parseInt(eastingInput, 10);
-  const n = Number.parseInt(northingInput, 10);
-
-  if (Number.isNaN(e) || Number.isNaN(n)) {
-    return null;
-  }
-
-  if (e < 0 || e > 999 || n < 0 || n > 999) {
-    return null;
-  }
-
-  return {
-    easting: Math.floor(baseEasting / 1000) * 1000 + e,
-    northing: Math.floor(baseNorthing / 1000) * 1000 + n,
-  };
-}
-
 // Darmstadt is in UTM Zone 32U
 // Approximate center: 49.8728, 8.6512
 // UTM: 32U 477xxx 552xxxx

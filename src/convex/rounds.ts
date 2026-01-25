@@ -256,6 +256,9 @@ export const reveal = mutation({
       .collect();
 
     // Add scores to teams
+    // Note: This loop is safe from race conditions because Convex mutations
+    // are fully transactional. If concurrent modifications occur, Convex's
+    // OCC (Optimistic Concurrency Control) will retry the entire transaction.
     for (const guess of guesses) {
       const team = await ctx.db.get(guess.teamId);
       if (team) {
@@ -348,50 +351,5 @@ export const complete = mutation({
       finishedAt: Date.now(),
     });
     return { hasNextRound: false };
-  },
-});
-
-/**
- * Update time limit for a round
- */
-export const updateTimeLimit = mutation({
-  args: {
-    roundId: v.id("rounds"),
-    timeLimit: v.number(),
-  },
-  handler: async (ctx, args) => {
-    // Validate time limit bounds (5-300 seconds)
-    if (args.timeLimit < 5 || args.timeLimit > 300) {
-      throw new Error("Time limit must be between 5 and 300 seconds");
-    }
-
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Must be logged in");
-    }
-
-    const round = await ctx.db.get(args.roundId);
-    if (!round) {
-      throw new Error("Round not found");
-    }
-
-    const game = await ctx.db.get(round.gameId);
-    if (!game) {
-      throw new Error("Game not found");
-    }
-
-    if (game.moderatorId !== userId) {
-      throw new Error("Only the moderator can update rounds");
-    }
-
-    if (round.status !== "pending" && round.status !== "showing") {
-      throw new Error("Cannot change time limit after countdown started");
-    }
-
-    await ctx.db.patch(args.roundId, {
-      timeLimit: args.timeLimit,
-    });
-
-    return { success: true };
   },
 });

@@ -10,8 +10,8 @@ import {
 } from "@/components/LocationSolutionMap";
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { Card, CardContent } from "@/components/ui/card";
-import { utmToLatLng } from "@/lib/utm";
-import { extractLocationUtm, parseUtmZone } from "@/lib/utm-helpers";
+import { getCorrectPosition } from "@/lib/location";
+import { extractLocationUtm } from "@/lib/utm-helpers";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
@@ -175,25 +175,4 @@ export function UtmToLocationReveal({
       )}
     </div>
   );
-}
-
-/**
- * Get correct position from location, converting from UTM if needed.
- */
-function getCorrectPosition(
-  location: { latitude?: number; longitude?: number },
-  utm: { utmZone: string; utmEasting: number; utmNorthing: number },
-): { lat: number; lng: number } {
-  if (location.latitude != null && location.longitude != null) {
-    return { lat: location.latitude, lng: location.longitude };
-  }
-
-  const { zone, hemisphere } = parseUtmZone(utm.utmZone);
-  const latLng = utmToLatLng({
-    zone,
-    hemisphere,
-    easting: utm.utmEasting,
-    northing: utm.utmNorthing,
-  });
-  return { lat: latLng.latitude, lng: latLng.longitude };
 }
