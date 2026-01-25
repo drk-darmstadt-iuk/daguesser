@@ -170,7 +170,7 @@ export const submit = mutation({
       ? round.countdownEndsAt - round.timeLimit * 1000 - (round.countdownEndsAt - Date.now())
       : 0;
 
-    // Create the guess
+    // Create the guess (score is calculated but NOT added to team yet - happens on reveal)
     const guessId = await ctx.db.insert("guesses", {
       roundId: args.roundId,
       teamId: team._id,
@@ -184,15 +184,12 @@ export const submit = mutation({
       submittedAt: Date.now(),
     });
 
-    // Update team score
-    await ctx.db.patch(team._id, {
-      score: team.score + score,
-    });
+    // NOTE: Team score is NOT updated here - it happens when moderator reveals the round
+    // This keeps the results hidden until the reveal
 
     return {
       guessId,
-      distanceMeters: Math.round(distanceMeters),
-      score,
+      // Don't return score/distance to keep it secret until reveal
     };
   },
 });
@@ -234,6 +231,7 @@ export const getForRound = query({
 
 /**
  * Get my guess for a round
+ * Note: Score and distance are hidden until the round is revealed
  */
 export const getMyGuess = query({
   args: { roundId: v.id("rounds") },
@@ -253,12 +251,34 @@ export const getMyGuess = query({
 
     if (!team) return null;
 
-    return await ctx.db
+    const guess = await ctx.db
       .query("guesses")
       .withIndex("by_round_and_team", (q) =>
         q.eq("roundId", args.roundId).eq("teamId", team._id),
       )
       .first();
+
+    if (!guess) return null;
+
+    // Only show score and distance after reveal
+    const isRevealed = round.status === "reveal" || round.status === "completed";
+
+    return {
+      _id: guess._id,
+      _creationTime: guess._creationTime,
+      roundId: guess.roundId,
+      teamId: guess.teamId,
+      guessedUtmEasting: guess.guessedUtmEasting,
+      guessedUtmNorthing: guess.guessedUtmNorthing,
+      guessedLatitude: guess.guessedLatitude,
+      guessedLongitude: guess.guessedLongitude,
+      submittedAt: guess.submittedAt,
+      responseTimeMs: guess.responseTimeMs,
+      // Hide score and distance until reveal
+      score: isRevealed ? guess.score : undefined,
+      distanceMeters: isRevealed ? guess.distanceMeters : undefined,
+      hasSubmitted: true,
+    };
   },
 });
 

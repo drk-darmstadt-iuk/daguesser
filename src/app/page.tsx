@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
@@ -12,7 +12,7 @@ export default function Home() {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [shouldNavigate, setShouldNavigate] = useState(false);
 
   // Check if game exists when code is complete
   const game = useQuery(
@@ -20,26 +20,30 @@ export default function Home() {
     joinCode.length === 6 ? { joinCode } : "skip",
   );
 
-  const handleCodeComplete = async (code: string) => {
-    setError(null);
-    setIsLoading(true);
+  // Derived loading state - loading when we have a complete code but no result yet
+  const isLoading = joinCode.length === 6 && game === undefined;
 
-    // Small delay to allow query to complete
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    if (game === undefined) {
-      // Still loading
-      return;
-    }
-
-    if (game === null) {
+  // Navigate when game is found and user wants to join
+  useEffect(() => {
+    if (shouldNavigate && game && !error) {
+      router.push(`/play/${joinCode}`);
+    } else if (shouldNavigate && game === null) {
       setError("Spiel nicht gefunden. Bitte Code prüfen.");
-      setIsLoading(false);
-      return;
+      setShouldNavigate(false);
     }
+  }, [shouldNavigate, game, error, router, joinCode]);
 
-    // Navigate to game lobby
-    router.push(`/play/${code}`);
+  const handleCodeComplete = (code: string) => {
+    setError(null);
+    // If game is already loaded, navigate immediately
+    if (game) {
+      router.push(`/play/${code}`);
+    } else if (game === null) {
+      setError("Spiel nicht gefunden. Bitte Code prüfen.");
+    } else {
+      // Game is still loading, set flag to navigate when ready
+      setShouldNavigate(true);
+    }
   };
 
   const handleJoin = () => {
@@ -83,9 +87,10 @@ export default function Home() {
               onChange={(value) => {
                 setJoinCode(value);
                 setError(null);
+                setShouldNavigate(false);
               }}
               onComplete={handleCodeComplete}
-              disabled={isLoading}
+              disabled={isLoading || shouldNavigate}
             />
 
             {error && (
@@ -106,9 +111,9 @@ export default function Home() {
               size="lg"
               className="w-full"
               onClick={handleJoin}
-              disabled={joinCode.length !== 6 || isLoading || !game}
+              disabled={joinCode.length !== 6 || isLoading || shouldNavigate || !game}
             >
-              {isLoading ? "Wird geladen..." : "Spiel beitreten"}
+              {isLoading || shouldNavigate ? "Wird geladen..." : "Spiel beitreten"}
             </Button>
           </div>
         </CardContent>

@@ -52,16 +52,19 @@ async function getLeaderboardData(
   const entries: Omit<LeaderboardEntry, "rank">[] = teams.map((team) => {
     const teamGuesses = guesses.filter((g) => g.teamId === team._id);
 
+    // Only show round scores for revealed/completed rounds
     const roundScores = teamGuesses
       .map((guess) => {
         const round = roundsMap.get(guess.roundId);
-        return round
-          ? {
-              roundNumber: round.roundNumber,
-              score: guess.score,
-              distanceMeters: guess.distanceMeters,
-            }
-          : null;
+        // Only include if round is revealed or completed
+        if (!round || (round.status !== "reveal" && round.status !== "completed")) {
+          return null;
+        }
+        return {
+          roundNumber: round.roundNumber,
+          score: guess.score,
+          distanceMeters: guess.distanceMeters,
+        };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
       .sort((a, b) => a.roundNumber - b.roundNumber);

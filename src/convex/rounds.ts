@@ -241,6 +241,22 @@ export const reveal = mutation({
       throw new Error("Round must be showing or guessing to reveal");
     }
 
+    // Get all guesses for this round and update team scores
+    const guesses = await ctx.db
+      .query("guesses")
+      .withIndex("by_round", (q) => q.eq("roundId", round._id))
+      .collect();
+
+    // Add scores to teams
+    for (const guess of guesses) {
+      const team = await ctx.db.get(guess.teamId);
+      if (team) {
+        await ctx.db.patch(team._id, {
+          score: team.score + guess.score,
+        });
+      }
+    }
+
     await ctx.db.patch(round._id, {
       status: "reveal",
       revealedAt: Date.now(),
