@@ -141,7 +141,8 @@ function NewGameForm() {
       // Create game
       const { gameId } = await createGame({
         name: gameName.trim(),
-        defaultTimeLimit: data.defaultTimeLimit ?? Number.parseInt(timeLimit, 10),
+        defaultTimeLimit:
+          data.defaultTimeLimit ?? Number.parseInt(timeLimit, 10),
       });
 
       // Convert locations to include UTM coordinates
@@ -309,7 +310,9 @@ function NewGameForm() {
                   onClick={handleCreateWithSample}
                   disabled={isCreating || selectedModes.length === 0}
                 >
-                  {isCreating ? "Wird erstellt..." : "Mit Beispiel-Orten erstellen"}
+                  {isCreating
+                    ? "Wird erstellt..."
+                    : "Mit Beispiel-Orten erstellen"}
                 </Button>
               </TabsContent>
 

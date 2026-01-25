@@ -17,7 +17,11 @@ interface RoundStatusProps {
 
 const statusConfig: Record<
   RoundStatusValue,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string }
+  {
+    label: string;
+    variant: "default" | "secondary" | "outline" | "destructive";
+    className: string;
+  }
 > = {
   pending: {
     label: "Wartet",
@@ -50,10 +54,7 @@ export function RoundStatus({ status, className }: RoundStatusProps) {
   const config = statusConfig[status];
 
   return (
-    <Badge
-      variant={config.variant}
-      className={cn(config.className, className)}
-    >
+    <Badge variant={config.variant} className={cn(config.className, className)}>
       {config.label}
     </Badge>
   );
@@ -68,7 +69,11 @@ interface GameStatusProps {
 
 const gameStatusConfig: Record<
   GameStatusValue,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; className: string }
+  {
+    label: string;
+    variant: "default" | "secondary" | "outline" | "destructive";
+    className: string;
+  }
 > = {
   lobby: {
     label: "Warteraum",
@@ -96,10 +101,7 @@ export function GameStatus({ status, className }: GameStatusProps) {
   const config = gameStatusConfig[status];
 
   return (
-    <Badge
-      variant={config.variant}
-      className={cn(config.className, className)}
-    >
+    <Badge variant={config.variant} className={cn(config.className, className)}>
       {config.label}
     </Badge>
   );
@@ -112,7 +114,10 @@ interface GameModeProps {
   className?: string;
 }
 
-const gameModeConfig: Record<GameModeValue, { label: string; description: string }> = {
+const gameModeConfig: Record<
+  GameModeValue,
+  { label: string; description: string }
+> = {
   imageToUtm: {
     label: "Bild → UTM",
     description: "Bild anschauen, Koordinaten raten",

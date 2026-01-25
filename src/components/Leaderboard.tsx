@@ -129,7 +129,9 @@ export function Leaderboard({
                     "text-right font-mono font-bold tabular-nums",
                     config.padding,
                     config.score,
-                    entry.score > 0 ? "text-secondary" : "text-muted-foreground",
+                    entry.score > 0
+                      ? "text-secondary"
+                      : "text-muted-foreground",
                   )}
                 >
                   {entry.score.toLocaleString("de-DE")}

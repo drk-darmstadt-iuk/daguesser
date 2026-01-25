@@ -1,63 +1,65 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { use, useEffect, useState } from "react";
 import { GameHeader } from "@/components/GameHeader";
-import { CountdownTimer, CountdownDisplay } from "@/components/CountdownTimer";
-import { UtmInput } from "@/components/UtmInput";
-import { UtmDisplay } from "@/components/UtmDisplay";
-import { RoundScoreResult } from "@/components/TeamScoreCard";
+import type { GuessResult, LocationData } from "@/components/game-modes";
+import { GameModeRenderer } from "@/components/game-modes";
 import { LeaderboardCompact } from "@/components/Leaderboard";
+import { RoundScoreResult } from "@/components/TeamScoreCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getDistanceRating } from "@/lib/scoring";
+import {
+  calculateFullUtm,
+  DARMSTADT_DEFAULTS,
+  extractLocationUtm,
+  isUtmInputComplete,
+} from "@/lib/utm-helpers";
+import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import type { LeaderboardEntry } from "../../../../convex/leaderboard";
+
+interface TeamGameProps {
+  params: Promise<{ joinCode: string }>;
+}
 
 export default function TeamGame({
   params,
-}: {
-  params: Promise<{ joinCode: string }>;
-}) {
+}: TeamGameProps): React.ReactElement | null {
   const { joinCode } = use(params);
   const router = useRouter();
 
-  // UTM input state
   const [eastingInput, setEastingInput] = useState("");
   const [northingInput, setNorthingInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Get game info by join code first to get ID
   const gameByCode = useQuery(api.games.getByJoinCode, {
     joinCode: joinCode.toUpperCase(),
   });
 
-  // Get full game info with totalRounds
   const game = useQuery(
     api.games.get,
     gameByCode?._id ? { gameId: gameByCode._id } : "skip",
   );
 
-  // Get my team
   const myTeam = useQuery(
     api.teams.getMyTeam,
     game?._id ? { gameId: game._id } : "skip",
   );
 
-  // Get current round
   const currentRound = useQuery(
     api.rounds.getCurrent,
     game?._id ? { gameId: game._id } : "skip",
   );
 
-  // Get my guess for current round
   const myGuess = useQuery(
     api.guesses.getMyGuess,
     currentRound?._id ? { roundId: currentRound._id } : "skip",
   );
 
-  // Get round guesses (for reveal)
   const roundGuesses = useQuery(
     api.guesses.getForRound,
     currentRound?._id &&
@@ -66,7 +68,6 @@ export default function TeamGame({
       : "skip",
   );
 
-  // Get leaderboard
   const leaderboard = useQuery(
     api.leaderboard.get,
     game?._id ? { gameId: game._id } : "skip",
@@ -74,28 +75,26 @@ export default function TeamGame({
 
   const submitGuess = useMutation(api.guesses.submit);
 
-  // Reset input when round changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setters are stable
   useEffect(() => {
     setEastingInput("");
     setNorthingInput("");
     setSubmitError(null);
   }, [currentRound?._id]);
 
-  // Redirect if not in a team
   useEffect(() => {
     if (game && myTeam === null) {
       router.push(`/play/${joinCode}`);
     }
   }, [game, myTeam, router, joinCode]);
 
-  const handleSubmit = async () => {
+  async function handleSubmit(): Promise<void> {
     if (!currentRound?._id) return;
 
-    // Validate input
     if (currentRound.mode === "imageToUtm") {
-      if (eastingInput.length !== 3 || northingInput.length !== 3) {
+      if (!isUtmInputComplete(eastingInput, northingInput)) {
         setSubmitError(
-          "Bitte vollständige Koordinaten eingeben (je 3 Ziffern)",
+          "Bitte vollstaendige Koordinaten eingeben (je 3 Ziffern)",
         );
         return;
       }
@@ -104,19 +103,15 @@ export default function TeamGame({
     setIsSubmitting(true);
     setSubmitError(null);
 
+    const baseEasting =
+      currentRound.location?.utmEasting ?? DARMSTADT_DEFAULTS.baseEasting;
+    const baseNorthing =
+      currentRound.location?.utmNorthing ?? DARMSTADT_DEFAULTS.baseNorthing;
+
+    const fullEasting = calculateFullUtm(baseEasting, eastingInput);
+    const fullNorthing = calculateFullUtm(baseNorthing, northingInput);
+
     try {
-      // Calculate full UTM from input
-      // Base values for Darmstadt area (these should come from the location)
-      const baseEasting = currentRound.location?.utmEasting
-        ? Math.floor(currentRound.location.utmEasting / 1000) * 1000
-        : 477000;
-      const baseNorthing = currentRound.location?.utmNorthing
-        ? Math.floor(currentRound.location.utmNorthing / 1000) * 1000
-        : 5523000;
-
-      const fullEasting = baseEasting + Number.parseInt(eastingInput, 10);
-      const fullNorthing = baseNorthing + Number.parseInt(northingInput, 10);
-
       await submitGuess({
         roundId: currentRound._id as Id<"rounds">,
         utmEasting: fullEasting,
@@ -129,141 +124,47 @@ export default function TeamGame({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
-  // Loading states
   if (
     gameByCode === undefined ||
     game === undefined ||
     myTeam === undefined ||
     currentRound === undefined
   ) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Wird geladen...</div>
-      </main>
-    );
+    return <LoadingState />;
   }
 
-  // Game not found
   if (gameByCode === null || game === null) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Spiel nicht gefunden</div>
-      </main>
-    );
+    return <NotFoundState />;
   }
 
-  // Not in a team
   if (!myTeam) {
-    return null; // Will redirect
+    return null;
   }
 
-  // Game finished - show final leaderboard
   if (game.status === "finished") {
     return (
-      <main className="min-h-screen flex flex-col">
-        <GameHeader
-          joinCode={game.joinCode}
-          teamName={myTeam.name}
-          teamScore={myTeam.score}
-        />
-
-        <div className="flex-1 flex flex-col items-center justify-center p-4 gap-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">Spiel beendet!</h1>
-            <p className="text-muted-foreground">Endstand</p>
-          </div>
-
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6">
-              {leaderboard && (
-                <LeaderboardCompact
-                  entries={leaderboard}
-                  highlightTeamId={myTeam._id}
-                  maxEntries={10}
-                />
-              )}
-            </CardContent>
-          </Card>
-
-          <Button variant="outline" onClick={() => router.push("/")}>
-            Neues Spiel
-          </Button>
-        </div>
-      </main>
+      <GameFinishedView
+        game={game}
+        myTeam={myTeam}
+        leaderboard={leaderboard ?? null}
+        onNewGame={() => router.push("/")}
+      />
     );
   }
 
-  // Game paused
   if (game.status === "paused") {
-    return (
-      <main className="min-h-screen flex flex-col">
-        <GameHeader
-          joinCode={game.joinCode}
-          roundNumber={(game.currentRoundIndex ?? 0) + 1}
-          totalRounds={game.totalRounds}
-          teamName={myTeam.name}
-          teamScore={myTeam.score}
-        />
-
-        <div className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-warning"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <rect x="6" y="4" width="4" height="16" />
-                  <rect x="14" y="4" width="4" height="16" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold mb-2">Spiel pausiert</h2>
-              <p className="text-muted-foreground">Warte auf den Moderator...</p>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    );
+    return <GamePausedView game={game} myTeam={myTeam} />;
   }
 
-  // No current round
   if (!currentRound) {
-    return (
-      <main className="min-h-screen flex flex-col">
-        <GameHeader
-          joinCode={game.joinCode}
-          teamName={myTeam.name}
-          teamScore={myTeam.score}
-        />
-
-        <div className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">
-                Warte auf die nächste Runde...
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    );
+    return <WaitingForRoundView game={game} myTeam={myTeam} />;
   }
 
-  // Find my guess result for reveal
-  const myGuessResult = roundGuesses?.find((g) => g.teamId === myTeam._id);
-
-  // Helper to safely get location UTM data with defaults
-  const getLocationUtm = () => {
-    const loc = currentRound.location;
-    return {
-      utmZone: loc?.utmZone ?? "32U",
-      utmEasting: loc?.utmEasting ?? 0,
-      utmNorthing: loc?.utmNorthing ?? 0,
-    };
-  };
+  const myGuessResult =
+    roundGuesses?.find((g) => g.teamId === myTeam._id) ?? null;
+  const locationData = buildLocationData(currentRound.location);
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -278,282 +179,298 @@ export default function TeamGame({
       />
 
       <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
-        {/* SHOWING state - waiting for countdown */}
-        {currentRound.status === "showing" && (
+        {currentRound.status === "pending" ? (
+          <PendingRoundCard />
+        ) : (
           <>
-            {currentRound.mode === "imageToUtm" &&
-              currentRound.location?.imageUrls?.[0] && (
-                <Card className="w-full max-w-2xl overflow-hidden">
-                  <img
-                    src={currentRound.location.imageUrls[0]}
-                    alt="Zu erratender Ort"
-                    className="w-full h-auto max-h-[50vh] object-contain"
-                  />
-                </Card>
-              )}
+            <GameModeRenderer
+              mode={currentRound.mode}
+              status={currentRound.status}
+              location={locationData}
+              timeLimit={currentRound.timeLimit}
+              countdownEndsAt={currentRound.countdownEndsAt ?? null}
+              hasGuessed={Boolean(myGuess)}
+              guessResult={buildGuessResult(myGuessResult)}
+              inputState={{
+                eastingInput,
+                northingInput,
+                isSubmitting,
+                submitError,
+              }}
+              inputActions={{
+                setEastingInput,
+                setNorthingInput,
+                handleSubmit,
+              }}
+            />
 
-            {currentRound.mode === "utmToLocation" && currentRound.location && (
-              <UtmDisplay
-                utmZone={getLocationUtm().utmZone}
-                easting={getLocationUtm().utmEasting}
-                northing={getLocationUtm().utmNorthing}
-                size="lg"
+            {(currentRound.status === "reveal" ||
+              currentRound.status === "completed") && (
+              <RevealResults
+                myGuessResult={myGuessResult}
+                leaderboard={leaderboard ?? null}
+                myTeamId={myTeam._id}
               />
-            )}
-
-            <Card className="w-full max-w-md">
-              <CardContent className="pt-6 text-center">
-                <p className="text-muted-foreground mb-2">
-                  Gleich geht&apos;s los!
-                </p>
-                <CountdownDisplay seconds={currentRound.timeLimit} size="lg" />
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* GUESSING state - can submit */}
-        {currentRound.status === "guessing" && (
-          <>
-            {/* Show image for imageToUtm mode */}
-            {currentRound.mode === "imageToUtm" &&
-              currentRound.location?.imageUrls?.[0] && (
-                <Card className="w-full max-w-2xl overflow-hidden">
-                  <img
-                    src={currentRound.location.imageUrls[0]}
-                    alt="Zu erratender Ort"
-                    className="w-full h-auto max-h-[40vh] object-contain"
-                  />
-                </Card>
-              )}
-
-            {/* Show UTM for utmToLocation mode */}
-            {currentRound.mode === "utmToLocation" && currentRound.location && (
-              <UtmDisplay
-                utmZone={getLocationUtm().utmZone}
-                easting={getLocationUtm().utmEasting}
-                northing={getLocationUtm().utmNorthing}
-                size="md"
-              />
-            )}
-
-            {/* Countdown */}
-            {currentRound.countdownEndsAt && (
-              <CountdownTimer
-                endsAt={currentRound.countdownEndsAt}
-                totalSeconds={currentRound.timeLimit}
-                size="lg"
-              />
-            )}
-
-            {/* Input or submitted state */}
-            {myGuess ? (
-              <Card className="w-full max-w-md">
-                <CardContent className="pt-6 text-center">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-correct/20 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-correct"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </div>
-                  <p className="font-semibold text-correct">
-                    Antwort abgegeben!
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Warte auf die Auflösung...
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="w-full max-w-md">
-                <CardContent className="pt-6">
-                  {currentRound.mode === "imageToUtm" && (
-                    <>
-                      <UtmInput
-                        utmZone={currentRound.location?.utmZone ?? "32U"}
-                        eastingValue={eastingInput}
-                        northingValue={northingInput}
-                        onEastingChange={setEastingInput}
-                        onNorthingChange={setNorthingInput}
-                        disabled={isSubmitting}
-                        error={submitError ?? undefined}
-                        size="lg"
-                      />
-
-                      <Button
-                        size="lg"
-                        className="w-full mt-6"
-                        onClick={handleSubmit}
-                        disabled={
-                          eastingInput.length !== 3 ||
-                          northingInput.length !== 3 ||
-                          isSubmitting
-                        }
-                      >
-                        {isSubmitting ? "Wird gesendet..." : "Antwort abgeben"}
-                      </Button>
-                    </>
-                  )}
-
-                  {currentRound.mode === "utmToLocation" && (
-                    <div className="text-center">
-                      <p className="text-muted-foreground mb-4">
-                        Finde den Ort auf der Karte!
-                      </p>
-                      {/* TODO: Map component with PlanZeiger */}
-                      <p className="text-sm text-muted-foreground">
-                        Karten-Modus kommt bald...
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             )}
           </>
-        )}
-
-        {/* REVEAL state - show results */}
-        {(currentRound.status === "reveal" ||
-          currentRound.status === "completed") && (
-          <>
-            {/* Comparison: Your answer vs Correct answer */}
-            {currentRound.location && (
-              <Card className="w-full max-w-md bg-card/80">
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Team's answer */}
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Deine Antwort
-                      </p>
-                      {myGuessResult?.guessedUtmEasting !== undefined &&
-                      myGuessResult?.guessedUtmNorthing !== undefined ? (
-                        <div className="font-mono text-lg">
-                          <div className="text-muted-foreground">
-                            E{" "}
-                            <span className="text-foreground">
-                              {String(
-                                Math.floor(myGuessResult.guessedUtmEasting) % 1000,
-                              ).padStart(3, "0")}
-                            </span>
-                          </div>
-                          <div className="text-muted-foreground">
-                            N{" "}
-                            <span className="text-foreground">
-                              {String(
-                                Math.floor(myGuessResult.guessedUtmNorthing) % 1000,
-                              ).padStart(3, "0")}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground text-sm">
-                          Keine Antwort
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Correct answer */}
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Richtig
-                      </p>
-                      <div className="font-mono text-lg">
-                        <div className="text-muted-foreground">
-                          E{" "}
-                          <span className="text-correct font-bold">
-                            {String(
-                              Math.floor(getLocationUtm().utmEasting) % 1000,
-                            ).padStart(3, "0")}
-                          </span>
-                        </div>
-                        <div className="text-muted-foreground">
-                          N{" "}
-                          <span className="text-correct font-bold">
-                            {String(
-                              Math.floor(getLocationUtm().utmNorthing) % 1000,
-                            ).padStart(3, "0")}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Location name */}
-                  <div className="mt-4 pt-4 border-t border-border text-center">
-                    <p className="text-sm text-muted-foreground">Ort</p>
-                    <h3 className="text-lg font-bold text-secondary">
-                      {currentRound.location.name}
-                    </h3>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* My result */}
-            {myGuessResult?.score !== undefined ? (
-              <RoundScoreResult
-                score={myGuessResult.score}
-                distanceMeters={myGuessResult.distanceMeters ?? 0}
-                rating={
-                  (myGuessResult.distanceMeters ?? 0) <= 10
-                    ? "perfect"
-                    : (myGuessResult.distanceMeters ?? 0) <= 50
-                      ? "excellent"
-                      : (myGuessResult.distanceMeters ?? 0) <= 200
-                        ? "good"
-                        : (myGuessResult.distanceMeters ?? 0) <= 500
-                          ? "fair"
-                          : (myGuessResult.distanceMeters ?? 0) <= 2000
-                            ? "poor"
-                            : "miss"
-                }
-              />
-            ) : (
-              <Card className="w-full max-w-md">
-                <CardContent className="pt-6 text-center">
-                  <p className="text-muted-foreground">
-                    Keine Antwort abgegeben
-                  </p>
-                  <p className="text-3xl font-bold text-muted-foreground mt-2">
-                    +0 Punkte
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Mini leaderboard */}
-            {leaderboard && (
-              <Card className="w-full max-w-md">
-                <CardContent className="pt-6">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                    Aktueller Stand
-                  </h4>
-                  <LeaderboardCompact
-                    entries={leaderboard}
-                    highlightTeamId={myTeam._id}
-                    maxEntries={5}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* PENDING state - waiting for round to start */}
-        {currentRound.status === "pending" && (
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">Warte auf Rundenstart...</p>
-            </CardContent>
-          </Card>
         )}
       </div>
     </main>
   );
+}
+
+function LoadingState(): React.ReactElement {
+  return (
+    <main className="min-h-screen flex items-center justify-center">
+      <div className="text-muted-foreground">Wird geladen...</div>
+    </main>
+  );
+}
+
+function NotFoundState(): React.ReactElement {
+  return (
+    <main className="min-h-screen flex items-center justify-center">
+      <div className="text-muted-foreground">Spiel nicht gefunden</div>
+    </main>
+  );
+}
+
+interface GameFinishedViewProps {
+  game: { joinCode: string };
+  myTeam: { name: string; score: number; _id: string };
+  leaderboard: LeaderboardEntry[] | null;
+  onNewGame: () => void;
+}
+
+function GameFinishedView({
+  game,
+  myTeam,
+  leaderboard,
+  onNewGame,
+}: GameFinishedViewProps): React.ReactElement {
+  return (
+    <main className="min-h-screen flex flex-col">
+      <GameHeader
+        joinCode={game.joinCode}
+        teamName={myTeam.name}
+        teamScore={myTeam.score}
+      />
+
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-2">Spiel beendet!</h1>
+          <p className="text-muted-foreground">Endstand</p>
+        </div>
+
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            {leaderboard && (
+              <LeaderboardCompact
+                entries={leaderboard}
+                highlightTeamId={myTeam._id}
+                maxEntries={10}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Button variant="outline" onClick={onNewGame}>
+          Neues Spiel
+        </Button>
+      </div>
+    </main>
+  );
+}
+
+interface GamePausedViewProps {
+  game: {
+    joinCode: string;
+    currentRoundIndex?: number | null;
+    totalRounds: number;
+  };
+  myTeam: { name: string; score: number };
+}
+
+function GamePausedView({
+  game,
+  myTeam,
+}: GamePausedViewProps): React.ReactElement {
+  return (
+    <main className="min-h-screen flex flex-col">
+      <GameHeader
+        joinCode={game.joinCode}
+        roundNumber={(game.currentRoundIndex ?? 0) + 1}
+        totalRounds={game.totalRounds}
+        teamName={myTeam.name}
+        teamScore={myTeam.score}
+      />
+
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
+              <PauseIcon />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Spiel pausiert</h2>
+            <p className="text-muted-foreground">Warte auf den Moderator...</p>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  );
+}
+
+interface WaitingForRoundViewProps {
+  game: { joinCode: string };
+  myTeam: { name: string; score: number };
+}
+
+function WaitingForRoundView({
+  game,
+  myTeam,
+}: WaitingForRoundViewProps): React.ReactElement {
+  return (
+    <main className="min-h-screen flex flex-col">
+      <GameHeader
+        joinCode={game.joinCode}
+        teamName={myTeam.name}
+        teamScore={myTeam.score}
+      />
+
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground">
+              Warte auf die naechste Runde...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  );
+}
+
+function PendingRoundCard(): React.ReactElement {
+  return (
+    <Card className="w-full max-w-md">
+      <CardContent className="pt-6 text-center">
+        <p className="text-muted-foreground">Warte auf Rundenstart...</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PauseIcon(): React.ReactElement {
+  return (
+    <svg
+      className="w-8 h-8 text-warning"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-label="Pausiert"
+      role="img"
+    >
+      <rect x="6" y="4" width="4" height="16" />
+      <rect x="14" y="4" width="4" height="16" />
+    </svg>
+  );
+}
+
+interface RevealResultsProps {
+  myGuessResult: {
+    score?: number;
+    distanceMeters?: number | null;
+  } | null;
+  leaderboard: LeaderboardEntry[] | null;
+  myTeamId: string;
+}
+
+function RevealResults({
+  myGuessResult,
+  leaderboard,
+  myTeamId,
+}: RevealResultsProps): React.ReactElement {
+  const hasScore = myGuessResult?.score !== undefined;
+  const distanceMeters = myGuessResult?.distanceMeters ?? 0;
+  const rating = hasScore ? getDistanceRating(distanceMeters).rating : "miss";
+
+  return (
+    <>
+      {hasScore ? (
+        <RoundScoreResult
+          score={myGuessResult.score ?? 0}
+          distanceMeters={distanceMeters}
+          rating={rating}
+        />
+      ) : (
+        <NoAnswerCard />
+      )}
+
+      {leaderboard && (
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <h4 className="text-sm font-medium text-muted-foreground mb-3">
+              Aktueller Stand
+            </h4>
+            <LeaderboardCompact
+              entries={leaderboard}
+              highlightTeamId={myTeamId}
+              maxEntries={5}
+            />
+          </CardContent>
+        </Card>
+      )}
+    </>
+  );
+}
+
+function NoAnswerCard(): React.ReactElement {
+  return (
+    <Card className="w-full max-w-md">
+      <CardContent className="pt-6 text-center">
+        <p className="text-muted-foreground">Keine Antwort abgegeben</p>
+        <p className="text-3xl font-bold text-muted-foreground mt-2">
+          +0 Punkte
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function buildLocationData(
+  location:
+    | {
+        name: string;
+        utmZone?: string;
+        utmEasting?: number;
+        utmNorthing?: number;
+        imageUrls?: string[];
+      }
+    | null
+    | undefined,
+): LocationData {
+  const utmData = extractLocationUtm(location);
+  return {
+    name: location?.name ?? "Unbekannter Ort",
+    utmZone: utmData.utmZone,
+    utmEasting: utmData.utmEasting,
+    utmNorthing: utmData.utmNorthing,
+    imageUrls: location?.imageUrls,
+  };
+}
+
+function buildGuessResult(
+  guessData: {
+    guessedUtmEasting?: number;
+    guessedUtmNorthing?: number;
+    score?: number;
+    distanceMeters?: number | null;
+  } | null,
+): GuessResult | null {
+  if (!guessData) return null;
+  return {
+    guessedUtmEasting: guessData.guessedUtmEasting,
+    guessedUtmNorthing: guessData.guessedUtmNorthing,
+    score: guessData.score,
+    distanceMeters: guessData.distanceMeters,
+  };
 }

@@ -71,9 +71,7 @@ function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() =>
-              router.push(`/moderator/games/${gameId}/present`)
-            }
+            onClick={() => router.push(`/moderator/games/${gameId}/present`)}
           >
             Beamer-Ansicht
           </Button>
@@ -107,7 +105,9 @@ function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
                     size="lg"
                     className="w-full"
                     onClick={() => startGame({ gameId })}
-                    disabled={activeTeams.length === 0 || (rounds?.length ?? 0) === 0}
+                    disabled={
+                      activeTeams.length === 0 || (rounds?.length ?? 0) === 0
+                    }
                   >
                     Spiel starten
                   </Button>
@@ -170,11 +170,10 @@ function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
                   {(currentRound.status === "showing" ||
                     currentRound.status === "guessing") && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Antworten:
-                      </span>
+                      <span className="text-muted-foreground">Antworten:</span>
                       <span className="font-mono">
-                        {currentRound.guessCount ?? 0} / {currentRound.totalTeams ?? 0}
+                        {currentRound.guessCount ?? 0} /{" "}
+                        {currentRound.totalTeams ?? 0}
                       </span>
                     </div>
                   )}
@@ -291,9 +290,7 @@ function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
                             : "outline"
                       }
                       className={
-                        round._id === currentRound?._id
-                          ? "bg-secondary"
-                          : ""
+                        round._id === currentRound?._id ? "bg-secondary" : ""
                       }
                     >
                       {round.roundNumber}
@@ -309,15 +306,9 @@ function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
         <div className="w-80 border-l border-border p-4">
           <h2 className="font-semibold mb-4">Leaderboard</h2>
           {leaderboard && leaderboard.length > 0 ? (
-            <Leaderboard
-              entries={leaderboard}
-              showRoundScores
-              size="sm"
-            />
+            <Leaderboard entries={leaderboard} showRoundScores size="sm" />
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Noch keine Punkte
-            </p>
+            <p className="text-sm text-muted-foreground">Noch keine Punkte</p>
           )}
 
           <Separator className="my-4" />
@@ -359,9 +350,7 @@ export default function GameControlPage({
         <main className="min-h-screen flex items-center justify-center">
           <Card className="w-full max-w-md">
             <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground mb-4">
-                Bitte melde dich an.
-              </p>
+              <p className="text-muted-foreground mb-4">Bitte melde dich an.</p>
               <Button onClick={() => router.push("/moderator")}>
                 Zur Anmeldung
               </Button>

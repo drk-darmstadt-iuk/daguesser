@@ -29,9 +29,7 @@ function BeamerView({ gameId }: { gameId: Id<"games"> }) {
     <main className="min-h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <GameHeaderBeamer
-        roundNumber={
-          currentRound ? currentRound.roundNumber : undefined
-        }
+        roundNumber={currentRound ? currentRound.roundNumber : undefined}
         totalRounds={game.totalRounds}
         joinCode={game.joinCode}
       />
@@ -150,7 +148,8 @@ function BeamerView({ gameId }: { gameId: Id<"games"> }) {
                   <div className="flex items-center justify-center gap-4 mt-8 text-2xl">
                     <span className="text-muted-foreground">Antworten:</span>
                     <span className="font-mono font-bold text-secondary">
-                      {currentRound.guessCount ?? 0} / {currentRound.totalTeams ?? 0}
+                      {currentRound.guessCount ?? 0} /{" "}
+                      {currentRound.totalTeams ?? 0}
                     </span>
                     {currentRound.allTeamsGuessed && (
                       <Badge className="text-lg px-4 py-1 bg-correct">

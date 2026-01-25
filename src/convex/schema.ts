@@ -13,16 +13,16 @@ export const gameStatus = v.union(
 // Round status enum values
 export const roundStatus = v.union(
   v.literal("pending"),
-  v.literal("showing"),    // Location/image is shown, countdown not started
-  v.literal("guessing"),   // Countdown is running, teams can guess
-  v.literal("reveal"),     // Results are being shown
+  v.literal("showing"), // Location/image is shown, countdown not started
+  v.literal("guessing"), // Countdown is running, teams can guess
+  v.literal("reveal"), // Results are being shown
   v.literal("completed"),
 );
 
 // Game mode enum values
 export const gameMode = v.union(
-  v.literal("imageToUtm"),      // Mode A: Show image, guess UTM coordinates
-  v.literal("utmToLocation"),   // Mode B: Show UTM, find on map
+  v.literal("imageToUtm"), // Mode A: Show image, guess UTM coordinates
+  v.literal("utmToLocation"), // Mode B: Show UTM, find on map
 );
 
 // Difficulty enum values
@@ -68,9 +68,9 @@ const schema = defineSchema(
       latitude: v.number(),
       longitude: v.number(),
       // UTM coordinates (calculated from lat/lng)
-      utmZone: v.string(),        // e.g., "32U"
-      utmEasting: v.number(),     // Full easting value
-      utmNorthing: v.number(),    // Full northing value
+      utmZone: v.string(), // e.g., "32U"
+      utmEasting: v.number(), // Full easting value
+      utmNorthing: v.number(), // Full northing value
       // Image URLs for Mode A (Convex file storage IDs or external URLs)
       imageUrls: v.array(v.string()),
       // Optional hint text

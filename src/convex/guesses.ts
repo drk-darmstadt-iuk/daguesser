@@ -167,7 +167,9 @@ export const submit = mutation({
 
     // Calculate response time
     const responseTimeMs = round.countdownEndsAt
-      ? round.countdownEndsAt - round.timeLimit * 1000 - (round.countdownEndsAt - Date.now())
+      ? round.countdownEndsAt -
+        round.timeLimit * 1000 -
+        (round.countdownEndsAt - Date.now())
       : 0;
 
     // Create the guess (score is calculated but NOT added to team yet - happens on reveal)
@@ -261,7 +263,8 @@ export const getMyGuess = query({
     if (!guess) return null;
 
     // Only show score and distance after reveal
-    const isRevealed = round.status === "reveal" || round.status === "completed";
+    const isRevealed =
+      round.status === "reveal" || round.status === "completed";
 
     return {
       _id: guess._id,

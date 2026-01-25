@@ -149,10 +149,12 @@ export function utmToLatLng(utm: UtmCoordinate): LatLngCoordinate {
   const mu =
     M /
     (WGS84.a *
-      (1 - WGS84.e2 / 4 - (3 * WGS84.e2 ** 2) / 64 - (5 * WGS84.e2 ** 3) / 256));
+      (1 -
+        WGS84.e2 / 4 -
+        (3 * WGS84.e2 ** 2) / 64 -
+        (5 * WGS84.e2 ** 3) / 256));
 
-  const e1 =
-    (1 - Math.sqrt(1 - WGS84.e2)) / (1 + Math.sqrt(1 - WGS84.e2));
+  const e1 = (1 - Math.sqrt(1 - WGS84.e2)) / (1 + Math.sqrt(1 - WGS84.e2));
 
   const phi1 =
     mu +
@@ -174,7 +176,12 @@ export function utmToLatLng(utm: UtmCoordinate): LatLngCoordinate {
     ((N1 * Math.tan(phi1)) / R1) *
       (D ** 2 / 2 -
         ((5 + 3 * T1 + 10 * C1 - 4 * C1 ** 2 - 9 * WGS84.ep2) * D ** 4) / 24 +
-        ((61 + 90 * T1 + 298 * C1 + 45 * T1 ** 2 - 252 * WGS84.ep2 - 3 * C1 ** 2) *
+        ((61 +
+          90 * T1 +
+          298 * C1 +
+          45 * T1 ** 2 -
+          252 * WGS84.ep2 -
+          3 * C1 ** 2) *
           D ** 6) /
           720);
 
@@ -189,7 +196,7 @@ export function utmToLatLng(utm: UtmCoordinate): LatLngCoordinate {
     centralMeridian;
 
   return {
-    latitude: Math.round((lat * 180) / Math.PI * 1e8) / 1e8,
+    latitude: Math.round(((lat * 180) / Math.PI) * 1e8) / 1e8,
     longitude: Math.round(lng * 1e8) / 1e8,
   };
 }
@@ -236,7 +243,12 @@ export function utmDistance(utm1: UtmCoordinate, utm2: UtmCoordinate): number {
   // Different zones - convert to lat/lng and use Haversine
   const ll1 = utmToLatLng(utm1);
   const ll2 = utmToLatLng(utm2);
-  return haversineDistance(ll1.latitude, ll1.longitude, ll2.latitude, ll2.longitude);
+  return haversineDistance(
+    ll1.latitude,
+    ll1.longitude,
+    ll2.latitude,
+    ll2.longitude,
+  );
 }
 
 /**

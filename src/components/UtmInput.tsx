@@ -115,10 +115,7 @@ export function UtmInput({
         <div className="flex items-center gap-2">
           {baseEastingKm !== undefined && (
             <span
-              className={cn(
-                "font-mono text-muted-foreground",
-                config.fontSize,
-              )}
+              className={cn("font-mono text-muted-foreground", config.fontSize)}
             >
               {baseEastingKm}
             </span>
@@ -152,10 +149,7 @@ export function UtmInput({
         <div className="flex items-center gap-2">
           {baseNorthingKm !== undefined && (
             <span
-              className={cn(
-                "font-mono text-muted-foreground",
-                config.fontSize,
-              )}
+              className={cn("font-mono text-muted-foreground", config.fontSize)}
             >
               {baseNorthingKm}
             </span>
@@ -182,9 +176,7 @@ export function UtmInput({
       </div>
 
       {/* Error message */}
-      {error && (
-        <p className="text-sm text-destructive text-center">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
     </div>
   );
 }

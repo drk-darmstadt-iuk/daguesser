@@ -58,7 +58,9 @@ export function UtmDisplay({
       <div className="flex flex-col gap-3">
         {/* Easting */}
         <div className="flex items-center gap-2">
-          <span className={cn("text-muted-foreground w-8", config.label)}>E</span>
+          <span className={cn("text-muted-foreground w-8", config.label)}>
+            E
+          </span>
           <span className={cn("font-mono tabular-nums", config.coord)}>
             {highlightLast3 ? (
               <>
@@ -78,7 +80,9 @@ export function UtmDisplay({
 
         {/* Northing */}
         <div className="flex items-center gap-2">
-          <span className={cn("text-muted-foreground w-8", config.label)}>N</span>
+          <span className={cn("text-muted-foreground w-8", config.label)}>
+            N
+          </span>
           <span className={cn("font-mono tabular-nums", config.coord)}>
             {highlightLast3 ? (
               <>

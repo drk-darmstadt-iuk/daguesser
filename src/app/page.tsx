@@ -111,9 +111,13 @@ export default function Home() {
               size="lg"
               className="w-full"
               onClick={handleJoin}
-              disabled={joinCode.length !== 6 || isLoading || shouldNavigate || !game}
+              disabled={
+                joinCode.length !== 6 || isLoading || shouldNavigate || !game
+              }
             >
-              {isLoading || shouldNavigate ? "Wird geladen..." : "Spiel beitreten"}
+              {isLoading || shouldNavigate
+                ? "Wird geladen..."
+                : "Spiel beitreten"}
             </Button>
           </div>
         </CardContent>

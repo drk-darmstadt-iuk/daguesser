@@ -7,20 +7,20 @@
  */
 
 export interface ScoringConfig {
-  maxPoints: number;        // Maximum points for a perfect guess
-  perfectRadius: number;    // Radius in meters for perfect score
-  zeroPointRadius: number;  // Radius in meters where score becomes 0
-  timeBonusMax: number;     // Maximum time bonus points
-  timeBonusDecay: number;   // Seconds until time bonus reaches 0
+  maxPoints: number; // Maximum points for a perfect guess
+  perfectRadius: number; // Radius in meters for perfect score
+  zeroPointRadius: number; // Radius in meters where score becomes 0
+  timeBonusMax: number; // Maximum time bonus points
+  timeBonusDecay: number; // Seconds until time bonus reaches 0
 }
 
 // Default scoring configuration
 export const DEFAULT_SCORING: ScoringConfig = {
   maxPoints: 1000,
-  perfectRadius: 10,        // Within 10 meters = perfect score
-  zeroPointRadius: 5000,    // Beyond 5km = no points
-  timeBonusMax: 200,        // Up to 200 bonus points for speed
-  timeBonusDecay: 30,       // Time bonus decays over 30 seconds
+  perfectRadius: 10, // Within 10 meters = perfect score
+  zeroPointRadius: 5000, // Beyond 5km = no points
+  timeBonusMax: 200, // Up to 200 bonus points for speed
+  timeBonusDecay: 30, // Time bonus decays over 30 seconds
 };
 
 /**
@@ -110,7 +110,11 @@ export function calculateTotalScore(
   totalScore: number;
 } {
   const distanceScore = calculateDistanceScore(distanceMeters, config);
-  const timeBonus = calculateTimeBonus(responseTimeMs, timeLimitSeconds, config);
+  const timeBonus = calculateTimeBonus(
+    responseTimeMs,
+    timeLimitSeconds,
+    config,
+  );
 
   return {
     distanceScore,

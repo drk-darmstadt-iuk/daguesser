@@ -178,9 +178,7 @@ export function RoundScoreResult({
   return (
     <div className={cn("flex flex-col items-center gap-4 py-8", className)}>
       {/* Rating */}
-      <div className={cn("text-4xl", config.class)}>
-        {config.emoji}
-      </div>
+      <div className={cn("text-4xl", config.class)}>{config.emoji}</div>
       <h3 className={cn("text-2xl font-bold", config.class)}>{config.label}</h3>
 
       {/* Score */}

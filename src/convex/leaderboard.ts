@@ -57,7 +57,10 @@ async function getLeaderboardData(
       .map((guess) => {
         const round = roundsMap.get(guess.roundId);
         // Only include if round is revealed or completed
-        if (!round || (round.status !== "reveal" && round.status !== "completed")) {
+        if (
+          !round ||
+          (round.status !== "reveal" && round.status !== "completed")
+        ) {
           return null;
         }
         return {
@@ -140,15 +143,11 @@ export const getTeamPosition = query({
   },
   handler: async (ctx, args) => {
     const fullLeaderboard = await getLeaderboardData(ctx, args.gameId);
-    const teamEntry = fullLeaderboard.find(
-      (e) => e.teamId === args.teamId,
-    );
+    const teamEntry = fullLeaderboard.find((e) => e.teamId === args.teamId);
 
     if (!teamEntry) return null;
 
-    const index = fullLeaderboard.findIndex(
-      (e) => e.teamId === args.teamId,
-    );
+    const index = fullLeaderboard.findIndex((e) => e.teamId === args.teamId);
     const totalTeams = fullLeaderboard.length;
 
     // Get neighbors

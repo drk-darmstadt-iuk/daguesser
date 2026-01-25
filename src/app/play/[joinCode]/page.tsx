@@ -27,7 +27,9 @@ export default function TeamLobby({
   const [hasJoined, setHasJoined] = useState(false);
 
   // Get game info
-  const game = useQuery(api.games.getByJoinCode, { joinCode: joinCode.toUpperCase() });
+  const game = useQuery(api.games.getByJoinCode, {
+    joinCode: joinCode.toUpperCase(),
+  });
 
   // Get team list
   const teams = useQuery(
@@ -99,7 +101,8 @@ export default function TeamLobby({
               Spiel nicht gefunden
             </h2>
             <p className="text-muted-foreground mb-4">
-              Der Code &quot;{joinCode}&quot; ist ungültig oder das Spiel wurde beendet.
+              Der Code &quot;{joinCode}&quot; ist ungültig oder das Spiel wurde
+              beendet.
             </p>
             <Button onClick={() => router.push("/")}>Zurück</Button>
           </CardContent>
@@ -164,9 +167,7 @@ export default function TeamLobby({
                   />
                 </div>
 
-                {error && (
-                  <p className="text-sm text-destructive">{error}</p>
-                )}
+                {error && <p className="text-sm text-destructive">{error}</p>}
 
                 <Button
                   size="lg"
@@ -196,7 +197,8 @@ export default function TeamLobby({
               </div>
               <h2 className="text-xl font-bold mb-2">Warten auf Spielstart</h2>
               <p className="text-muted-foreground mb-4">
-                Du bist dabei als <span className="text-secondary font-semibold">{teamName}</span>
+                Du bist dabei als{" "}
+                <span className="text-secondary font-semibold">{teamName}</span>
               </p>
               <p className="text-sm text-muted-foreground">
                 Der Moderator startet das Spiel gleich...

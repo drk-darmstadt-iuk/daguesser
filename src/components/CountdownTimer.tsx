@@ -31,16 +31,19 @@ export function CountdownTimer({
   );
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const newRemaining = Math.max(0, endsAt - now);
-      setRemaining(newRemaining);
+    const interval = setInterval(
+      () => {
+        const now = Date.now();
+        const newRemaining = Math.max(0, endsAt - now);
+        setRemaining(newRemaining);
 
-      if (newRemaining === 0) {
-        clearInterval(interval);
-        onComplete?.();
-      }
-    }, showMs ? 50 : 100);
+        if (newRemaining === 0) {
+          clearInterval(interval);
+          onComplete?.();
+        }
+      },
+      showMs ? 50 : 100,
+    );
 
     return () => clearInterval(interval);
   }, [endsAt, onComplete, showMs]);
@@ -74,7 +77,10 @@ export function CountdownTimer({
 
   return (
     <div
-      className={cn("relative inline-flex items-center justify-center", className)}
+      className={cn(
+        "relative inline-flex items-center justify-center",
+        className,
+      )}
       style={{ width: config.size, height: config.size }}
     >
       {/* Background circle */}

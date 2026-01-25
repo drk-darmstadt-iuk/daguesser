@@ -15,7 +15,9 @@ export const getCurrent = query({
     const round = await ctx.db
       .query("rounds")
       .withIndex("by_game_and_number", (q) =>
-        q.eq("gameId", args.gameId).eq("roundNumber", game.currentRoundIndex + 1),
+        q
+          .eq("gameId", args.gameId)
+          .eq("roundNumber", game.currentRoundIndex + 1),
       )
       .first();
 
@@ -129,7 +131,9 @@ export const start = mutation({
     const round = await ctx.db
       .query("rounds")
       .withIndex("by_game_and_number", (q) =>
-        q.eq("gameId", args.gameId).eq("roundNumber", game.currentRoundIndex + 1),
+        q
+          .eq("gameId", args.gameId)
+          .eq("roundNumber", game.currentRoundIndex + 1),
       )
       .first();
 
@@ -178,7 +182,9 @@ export const startCountdown = mutation({
     const round = await ctx.db
       .query("rounds")
       .withIndex("by_game_and_number", (q) =>
-        q.eq("gameId", args.gameId).eq("roundNumber", game.currentRoundIndex + 1),
+        q
+          .eq("gameId", args.gameId)
+          .eq("roundNumber", game.currentRoundIndex + 1),
       )
       .first();
 
@@ -229,7 +235,9 @@ export const reveal = mutation({
     const round = await ctx.db
       .query("rounds")
       .withIndex("by_game_and_number", (q) =>
-        q.eq("gameId", args.gameId).eq("roundNumber", game.currentRoundIndex + 1),
+        q
+          .eq("gameId", args.gameId)
+          .eq("roundNumber", game.currentRoundIndex + 1),
       )
       .first();
 
@@ -294,7 +302,9 @@ export const complete = mutation({
     const round = await ctx.db
       .query("rounds")
       .withIndex("by_game_and_number", (q) =>
-        q.eq("gameId", args.gameId).eq("roundNumber", game.currentRoundIndex + 1),
+        q
+          .eq("gameId", args.gameId)
+          .eq("roundNumber", game.currentRoundIndex + 1),
       )
       .first();
 
@@ -316,7 +326,9 @@ export const complete = mutation({
     const nextRound = await ctx.db
       .query("rounds")
       .withIndex("by_game_and_number", (q) =>
-        q.eq("gameId", args.gameId).eq("roundNumber", game.currentRoundIndex + 2),
+        q
+          .eq("gameId", args.gameId)
+          .eq("roundNumber", game.currentRoundIndex + 2),
       )
       .first();
 
@@ -325,7 +337,10 @@ export const complete = mutation({
       await ctx.db.patch(args.gameId, {
         currentRoundIndex: game.currentRoundIndex + 1,
       });
-      return { hasNextRound: true, nextRoundNumber: game.currentRoundIndex + 2 };
+      return {
+        hasNextRound: true,
+        nextRoundNumber: game.currentRoundIndex + 2,
+      };
     }
     // Game finished
     await ctx.db.patch(args.gameId, {

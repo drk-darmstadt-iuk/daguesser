@@ -139,7 +139,10 @@ export const importLocations = mutation({
       }
     }
 
-    return { locationCount: args.locations.length, roundCount: roundNumber - 1 };
+    return {
+      locationCount: args.locations.length,
+      roundCount: roundNumber - 1,
+    };
   },
 });
 
