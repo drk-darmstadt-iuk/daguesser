@@ -360,6 +360,11 @@ export const updateTimeLimit = mutation({
     timeLimit: v.number(),
   },
   handler: async (ctx, args) => {
+    // Validate time limit bounds (5-300 seconds)
+    if (args.timeLimit < 5 || args.timeLimit > 300) {
+      throw new Error("Time limit must be between 5 and 300 seconds");
+    }
+
     const userId = await auth.getUserId(ctx);
     if (!userId) {
       throw new Error("Must be logged in");

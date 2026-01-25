@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import { Pause } from "lucide-react";
 import { GameHeader } from "@/components/GameHeader";
 import type { GuessResult, LocationData } from "@/components/game-modes";
 import { GameModeRenderer } from "@/components/game-modes";
@@ -17,9 +18,9 @@ import {
   extractLocationUtm,
   isUtmInputComplete,
 } from "@/lib/utm-helpers";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import type { LeaderboardEntry } from "../../../../convex/leaderboard";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { LeaderboardEntry } from "@/convex/leaderboard";
 
 interface TeamGameProps {
   params: Promise<{ joinCode: string }>;
@@ -362,16 +363,11 @@ function PendingRoundCard(): React.ReactElement {
 
 function PauseIcon(): React.ReactElement {
   return (
-    <svg
+    <Pause
       className="w-8 h-8 text-warning"
-      viewBox="0 0 24 24"
       fill="currentColor"
       aria-label="Pausiert"
-      role="img"
-    >
-      <rect x="6" y="4" width="4" height="16" />
-      <rect x="14" y="4" width="4" height="16" />
-    </svg>
+    />
   );
 }
 

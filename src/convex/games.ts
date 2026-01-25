@@ -29,6 +29,12 @@ export const create = mutation({
       throw new Error("Must be logged in to create a game");
     }
 
+    // Validate time limit bounds (5-300 seconds)
+    const timeLimit = args.defaultTimeLimit ?? 30;
+    if (timeLimit < 5 || timeLimit > 300) {
+      throw new Error("Time limit must be between 5 and 300 seconds");
+    }
+
     // Generate a unique join code
     let joinCode = generateJoinCode();
     let existing = await ctx.db

@@ -128,8 +128,7 @@ const schema = defineSchema(
       lastSeenAt: v.number(),
     })
       .index("by_game", ["gameId"])
-      .index("by_game_and_session", ["gameId", "sessionId"])
-      .index("by_game_and_score", ["gameId", "score"]),
+      .index("by_game_and_session", ["gameId", "sessionId"]),
 
     // Guesses - Team submissions for rounds
     guesses: defineTable({

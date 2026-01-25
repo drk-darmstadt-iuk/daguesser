@@ -4,7 +4,8 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { api } from "../../../convex/_generated/api";
+import { Clock } from "lucide-react";
+import { api } from "@/convex/_generated/api";
 import { LobbyHeader } from "@/components/GameHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,16 +185,10 @@ export default function TeamLobby({
           <Card className="w-full max-w-md bg-card/80 backdrop-blur">
             <CardContent className="pt-6 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary/20 flex items-center justify-center animate-pulse">
-                <svg
+                <Clock
                   className="w-8 h-8 text-secondary"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
+                  aria-label="Warten auf Spielstart"
+                />
               </div>
               <h2 className="text-xl font-bold mb-2">Warten auf Spielstart</h2>
               <p className="text-muted-foreground mb-4">

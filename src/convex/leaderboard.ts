@@ -48,8 +48,8 @@ async function getLeaderboardData(
   );
   const guesses = allGuesses.flat();
 
-  // Build leaderboard entries
-  const entries: Omit<LeaderboardEntry, "rank">[] = teams.map((team) => {
+  // Build leaderboard entries with join time for tie-breaking
+  const entriesWithJoinTime = teams.map((team) => {
     const teamGuesses = guesses.filter((g) => g.teamId === team._id);
 
     // Only show round scores for revealed/completed rounds
@@ -78,15 +78,19 @@ async function getLeaderboardData(
       score: team.score,
       isActive: team.isActive,
       roundScores,
+      joinedAt: team.joinedAt,
     };
   });
 
-  // Sort by score descending
-  entries.sort((a, b) => {
+  // Sort by score descending, then by join time ascending (earlier = higher rank)
+  entriesWithJoinTime.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    // Tie-breaker: earlier join time (handled by team order)
-    return 0;
+    // Tie-breaker: earlier join time ranks higher
+    return a.joinedAt - b.joinedAt;
   });
+
+  // Remove joinedAt from final entries (not part of LeaderboardEntry interface)
+  const entries = entriesWithJoinTime.map(({ joinedAt: _, ...entry }) => entry);
 
   // Assign ranks (same rank for tied scores)
   let currentRank = 1;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 /**
@@ -11,17 +12,11 @@ export function GuessSubmittedCard(): React.ReactElement {
     <Card className="w-full max-w-md">
       <CardContent className="pt-6 text-center">
         <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-correct/20 flex items-center justify-center">
-          <svg
+          <Check
             className="w-6 h-6 text-correct"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            aria-label="Haekchen"
-            role="img"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+            strokeWidth={3}
+            aria-label="Erfolgreich eingereicht"
+          />
         </div>
         <p className="font-semibold text-correct">Antwort abgegeben!</p>
         <p className="text-sm text-muted-foreground mt-2">

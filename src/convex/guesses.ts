@@ -165,12 +165,11 @@ export const submit = mutation({
     // Calculate score
     const score = calculateScore(distanceMeters);
 
-    // Calculate response time
-    const responseTimeMs = round.countdownEndsAt
-      ? round.countdownEndsAt -
-        round.timeLimit * 1000 -
-        (round.countdownEndsAt - Date.now())
+    // Calculate response time (time since countdown started)
+    const startTime = round.countdownEndsAt
+      ? round.countdownEndsAt - round.timeLimit * 1000
       : 0;
+    const responseTimeMs = startTime ? Date.now() - startTime : 0;
 
     // Create the guess (score is calculated but NOT added to team yet - happens on reveal)
     const guessId = await ctx.db.insert("guesses", {

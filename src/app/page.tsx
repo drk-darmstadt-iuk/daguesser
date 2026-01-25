@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { Crosshair } from "lucide-react";
+import { api } from "@/convex/_generated/api";
 import { JoinCodeInput } from "@/components/JoinCodeInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,20 +58,10 @@ export default function Home() {
       {/* Logo and Title */}
       <div className="flex flex-col items-center gap-4 mb-12">
         <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+          <Crosshair
             className="w-12 h-12 text-primary-foreground"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="2" x2="12" y2="6" />
-            <line x1="12" y1="18" x2="12" y2="22" />
-            <line x1="2" y1="12" x2="6" y2="12" />
-            <line x1="18" y1="12" x2="22" y2="12" />
-            <circle cx="12" cy="12" r="3" fill="currentColor" />
-          </svg>
+            aria-hidden="true"
+          />
         </div>
         <h1 className="text-4xl font-bold tracking-tight">DAGuesser</h1>
         <p className="text-muted-foreground text-center max-w-md">

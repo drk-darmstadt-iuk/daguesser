@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
 /**
@@ -11,6 +11,15 @@ export const join = mutation({
     teamName: v.string(),
   },
   handler: async (ctx, args) => {
+    // Validate team name length (1-50 characters)
+    const trimmedName = args.teamName.trim();
+    if (trimmedName.length < 1) {
+      throw new Error("Team name cannot be empty");
+    }
+    if (trimmedName.length > 50) {
+      throw new Error("Team name must be 50 characters or less");
+    }
+
     // Get the session ID for anonymous auth
     const sessionId = await auth.getSessionId(ctx);
     if (!sessionId) {
@@ -28,11 +37,11 @@ export const join = mutation({
       .first();
 
     if (!game) {
-      throw new Error("Spiel nicht gefunden");
+      throw new Error("Game not found");
     }
 
     if (game.status === "finished") {
-      throw new Error("Das Spiel ist bereits beendet");
+      throw new Error("Game has already ended");
     }
 
     // Check if team already exists for this session in this game
@@ -61,7 +70,7 @@ export const join = mutation({
       .first();
 
     if (existingName) {
-      throw new Error("Dieser Teamname ist bereits vergeben");
+      throw new Error("This team name is already taken");
     }
 
     // Create new team
@@ -146,6 +155,15 @@ export const updateName = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
+    // Validate team name length (1-50 characters)
+    const trimmedName = args.name.trim();
+    if (trimmedName.length < 1) {
+      throw new Error("Team name cannot be empty");
+    }
+    if (trimmedName.length > 50) {
+      throw new Error("Team name must be 50 characters or less");
+    }
+
     const sessionId = await auth.getSessionId(ctx);
     if (!sessionId) {
       throw new Error("Must be authenticated");
@@ -166,18 +184,18 @@ export const updateName = mutation({
       .withIndex("by_game", (q) => q.eq("gameId", team.gameId))
       .filter((q) =>
         q.and(
-          q.eq(q.field("name"), args.name),
+          q.eq(q.field("name"), trimmedName),
           q.neq(q.field("_id"), args.teamId),
         ),
       )
       .first();
 
     if (existingName) {
-      throw new Error("Dieser Teamname ist bereits vergeben");
+      throw new Error("This team name is already taken");
     }
 
     await ctx.db.patch(args.teamId, {
-      name: args.name,
+      name: trimmedName,
       lastSeenAt: Date.now(),
     });
 
@@ -287,8 +305,9 @@ export const remove = mutation({
 
 /**
  * Update team score (internal helper, called after scoring)
+ * This is an internal mutation - not callable from clients.
  */
-export const addScore = mutation({
+export const addScore = internalMutation({
   args: {
     teamId: v.id("teams"),
     points: v.number(),

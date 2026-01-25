@@ -2,13 +2,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-type RoundStatusValue =
-  | "pending"
-  | "showing"
-  | "guessing"
-  | "reveal"
-  | "completed";
+import type {
+  RoundStatus as RoundStatusValue,
+  GameStatus as GameStatusValue,
+  GameMode as GameModeValue,
+} from "@/types/game";
 
 interface RoundStatusProps {
   status: RoundStatusValue;
@@ -60,8 +58,6 @@ export function RoundStatus({ status, className }: RoundStatusProps) {
   );
 }
 
-type GameStatusValue = "lobby" | "playing" | "paused" | "finished";
-
 interface GameStatusProps {
   status: GameStatusValue;
   className?: string;
@@ -106,8 +102,6 @@ export function GameStatus({ status, className }: GameStatusProps) {
     </Badge>
   );
 }
-
-type GameModeValue = "imageToUtm" | "utmToLocation";
 
 interface GameModeProps {
   mode: GameModeValue;
