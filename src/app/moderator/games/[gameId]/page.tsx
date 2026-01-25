@@ -1,22 +1,36 @@
 "use client";
 
-import { use } from "react";
+import {
+  Authenticated,
+  Unauthenticated,
+  useMutation,
+  useQuery,
+} from "convex/react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { GameHeader } from "@/components/GameHeader";
-import { Leaderboard } from "@/components/Leaderboard";
-import { CountdownTimer, CountdownDisplay } from "@/components/CountdownTimer";
-import { RoundStatus, GameStatus, GameMode } from "@/components/RoundStatus";
+import { use } from "react";
+import { CountdownTimer } from "@/components/CountdownTimer";
+import {
+  GameControls,
+  GuessProgress,
+  RoundControls,
+  RoundsOverview,
+  TeamsSidebar,
+} from "@/components/moderator";
+import { GameMode, GameStatus, RoundStatus } from "@/components/RoundStatus";
 import { UtmDisplayCompact } from "@/components/UtmDisplay";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Authenticated, Unauthenticated } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { extractLocationUtm } from "@/lib/utm-helpers";
 
-function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
+function GameControlPanel({
+  gameId,
+}: {
+  gameId: Id<"games">;
+}): React.ReactElement {
   const router = useRouter();
 
   // Queries
@@ -45,43 +59,21 @@ function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
   }
 
   const activeTeams = teams?.filter((t) => t.isActive) ?? [];
+  const totalRounds = rounds?.length ?? 0;
 
   return (
     <main className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/moderator")}
-          >
-            &larr; Zurück
-          </Button>
-          <div>
-            <h1 className="font-semibold">{game.name}</h1>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="font-mono">
-                {game.joinCode}
-              </Badge>
-              <GameStatus status={game.status} />
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/moderator/games/${gameId}/present`)}
-          >
-            Beamer-Ansicht
-          </Button>
-        </div>
-      </header>
+      <ControlHeader
+        gameName={game.name}
+        joinCode={game.joinCode}
+        gameStatus={game.status}
+        gameId={gameId}
+        onBack={() => router.push("/moderator")}
+        onOpenBeamer={() => router.push(`/moderator/games/${gameId}/present`)}
+      />
 
       <div className="flex-1 flex">
-        {/* Main Content */}
         <div className="flex-1 p-4 space-y-4">
-          {/* Game Status Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -92,247 +84,274 @@ function GameControlPanel({ gameId }: { gameId: Id<"games"> }) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Lobby State */}
               {game.status === "lobby" && (
-                <div className="space-y-4">
-                  <p className="text-muted-foreground">
-                    Warte auf Teams... Teile den Code{" "}
-                    <span className="font-mono font-bold text-secondary">
-                      {game.joinCode}
-                    </span>
-                  </p>
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={() => startGame({ gameId })}
-                    disabled={
-                      activeTeams.length === 0 || (rounds?.length ?? 0) === 0
-                    }
-                  >
-                    Spiel starten
-                  </Button>
-                  {activeTeams.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Mindestens ein Team muss beitreten
-                    </p>
-                  )}
-                  {(rounds?.length ?? 0) === 0 && (
-                    <p className="text-sm text-destructive text-center">
-                      Keine Runden vorhanden - bitte Orte importieren
-                    </p>
-                  )}
-                </div>
+                <LobbyControls
+                  joinCode={game.joinCode}
+                  activeTeamCount={activeTeams.length}
+                  roundCount={totalRounds}
+                  onStartGame={() => startGame({ gameId })}
+                />
               )}
 
-              {/* Playing State */}
               {game.status === "playing" && currentRound && (
-                <div className="space-y-4">
-                  {/* Current Round Info */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-semibold">
-                        Runde {currentRound.roundNumber}/{rounds?.length ?? 0}
-                      </span>
-                      <RoundStatus status={currentRound.status} />
-                      <GameMode mode={currentRound.mode} />
-                    </div>
-                    {currentRound.location && (
-                      <span className="text-muted-foreground">
-                        {currentRound.location.name}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* UTM Display */}
-                  {currentRound.location && (
-                    <div className="p-3 bg-muted rounded-lg">
-                      <UtmDisplayCompact
-                        utmZone={currentRound.location.utmZone ?? "32U"}
-                        easting={currentRound.location.utmEasting ?? 0}
-                        northing={currentRound.location.utmNorthing ?? 0}
-                      />
-                    </div>
-                  )}
-
-                  {/* Countdown Display */}
-                  {currentRound.status === "guessing" &&
-                    currentRound.countdownEndsAt && (
-                      <div className="flex justify-center py-4">
-                        <CountdownTimer
-                          endsAt={currentRound.countdownEndsAt}
-                          totalSeconds={currentRound.timeLimit}
-                          size="lg"
-                        />
-                      </div>
-                    )}
-
-                  {/* Guess Progress */}
-                  {(currentRound.status === "showing" ||
-                    currentRound.status === "guessing") && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Antworten:</span>
-                      <span className="font-mono">
-                        {currentRound.guessCount ?? 0} /{" "}
-                        {currentRound.totalTeams ?? 0}
-                      </span>
-                    </div>
-                  )}
-
-                  <Separator />
-
-                  {/* Round Controls */}
-                  <div className="flex flex-wrap gap-2">
-                    {currentRound.status === "pending" && (
-                      <Button
-                        onClick={() => startRound({ gameId })}
-                        className="flex-1"
-                      >
-                        Runde starten
-                      </Button>
-                    )}
-
-                    {currentRound.status === "showing" && (
-                      <Button
-                        onClick={() => startCountdown({ gameId })}
-                        className="flex-1"
-                      >
-                        Countdown starten ({currentRound.timeLimit}s)
-                      </Button>
-                    )}
-
-                    {currentRound.status === "guessing" && (
-                      <Button
-                        variant="secondary"
-                        onClick={() => revealRound({ gameId })}
-                        className="flex-1"
-                      >
-                        Auflösen
-                      </Button>
-                    )}
-
-                    {currentRound.status === "reveal" && (
-                      <Button
-                        onClick={() => completeRound({ gameId })}
-                        className="flex-1"
-                      >
-                        {currentRound.roundNumber === (rounds?.length ?? 0)
-                          ? "Spiel beenden"
-                          : "Nächste Runde"}
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Game Controls */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => pauseGame({ gameId })}
-                    >
-                      Pausieren
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => finishGame({ gameId })}
-                    >
-                      Spiel beenden
-                    </Button>
-                  </div>
-                </div>
+                <PlayingControls
+                  currentRound={currentRound}
+                  totalRounds={totalRounds}
+                  onStartRound={() => startRound({ gameId })}
+                  onStartCountdown={() => startCountdown({ gameId })}
+                  onReveal={() => revealRound({ gameId })}
+                  onComplete={() => completeRound({ gameId })}
+                  onPause={() => pauseGame({ gameId })}
+                  onFinish={() => finishGame({ gameId })}
+                />
               )}
 
-              {/* Paused State */}
               {game.status === "paused" && (
-                <div className="space-y-4 text-center">
-                  <p className="text-warning font-semibold">Spiel pausiert</p>
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={() => resumeGame({ gameId })}
-                  >
-                    Fortsetzen
-                  </Button>
-                </div>
+                <PausedControls onResume={() => resumeGame({ gameId })} />
               )}
 
-              {/* Finished State */}
               {game.status === "finished" && (
-                <div className="space-y-4 text-center">
-                  <p className="text-correct font-semibold">Spiel beendet</p>
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push("/moderator/games/new")}
-                  >
-                    Neues Spiel erstellen
-                  </Button>
-                </div>
+                <FinishedControls
+                  onNewGame={() => router.push("/moderator/games/new")}
+                />
               )}
             </CardContent>
           </Card>
 
-          {/* Rounds Overview */}
-          {rounds && rounds.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Runden-Übersicht</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {rounds.map((round) => (
-                    <Badge
-                      key={round._id}
-                      variant={
-                        round.status === "completed"
-                          ? "secondary"
-                          : round._id === currentRound?._id
-                            ? "default"
-                            : "outline"
-                      }
-                      className={
-                        round._id === currentRound?._id ? "bg-secondary" : ""
-                      }
-                    >
-                      {round.roundNumber}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <RoundsOverview
+            rounds={rounds ?? []}
+            currentRoundId={currentRound?._id}
+          />
         </div>
 
-        {/* Sidebar - Leaderboard */}
-        <div className="w-80 border-l border-border p-4">
-          <h2 className="font-semibold mb-4">Leaderboard</h2>
-          {leaderboard && leaderboard.length > 0 ? (
-            <Leaderboard entries={leaderboard} showRoundScores size="sm" />
-          ) : (
-            <p className="text-sm text-muted-foreground">Noch keine Punkte</p>
-          )}
+        <TeamsSidebar teams={teams ?? []} leaderboard={leaderboard ?? []} />
+      </div>
+    </main>
+  );
+}
 
-          <Separator className="my-4" />
+interface ControlHeaderProps {
+  gameName: string;
+  joinCode: string;
+  gameStatus: "lobby" | "playing" | "paused" | "finished";
+  gameId: Id<"games">;
+  onBack: () => void;
+  onOpenBeamer: () => void;
+}
 
-          {/* Active Teams */}
-          <h3 className="font-semibold text-sm mb-2">
-            Teams ({activeTeams.length})
-          </h3>
-          <div className="space-y-1">
-            {activeTeams.map((team) => (
-              <div
-                key={team._id}
-                className="flex items-center justify-between text-sm"
-              >
-                <span>{team.name}</span>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {team.score}
-                </Badge>
-              </div>
-            ))}
+function ControlHeader({
+  gameName,
+  joinCode,
+  gameStatus,
+  onBack,
+  onOpenBeamer,
+}: ControlHeaderProps): React.ReactElement {
+  return (
+    <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          &larr; Zurueck
+        </Button>
+        <div>
+          <h1 className="font-semibold">{gameName}</h1>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="font-mono">
+              {joinCode}
+            </Badge>
+            <GameStatus status={gameStatus} />
           </div>
         </div>
       </div>
-    </main>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={onOpenBeamer}>
+          Beamer-Ansicht
+        </Button>
+      </div>
+    </header>
+  );
+}
+
+interface LobbyControlsProps {
+  joinCode: string;
+  activeTeamCount: number;
+  roundCount: number;
+  onStartGame: () => void;
+}
+
+function LobbyControls({
+  joinCode,
+  activeTeamCount,
+  roundCount,
+  onStartGame,
+}: LobbyControlsProps): React.ReactElement {
+  const canStart = activeTeamCount > 0 && roundCount > 0;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-muted-foreground">
+        Warte auf Teams... Teile den Code{" "}
+        <span className="font-mono font-bold text-secondary">{joinCode}</span>
+      </p>
+      <Button
+        size="lg"
+        className="w-full"
+        onClick={onStartGame}
+        disabled={!canStart}
+      >
+        Spiel starten
+      </Button>
+      {activeTeamCount === 0 && (
+        <p className="text-sm text-muted-foreground text-center">
+          Mindestens ein Team muss beitreten
+        </p>
+      )}
+      {roundCount === 0 && (
+        <p className="text-sm text-destructive text-center">
+          Keine Runden vorhanden - bitte Orte importieren
+        </p>
+      )}
+    </div>
+  );
+}
+
+interface CurrentRoundData {
+  _id: Id<"rounds">;
+  roundNumber: number;
+  status: "pending" | "showing" | "guessing" | "reveal" | "completed";
+  mode: "imageToUtm" | "utmToLocation";
+  timeLimit: number;
+  countdownEndsAt?: number;
+  guessCount?: number;
+  totalTeams?: number;
+  location?: {
+    name: string;
+    utmZone?: string;
+    utmEasting?: number;
+    utmNorthing?: number;
+  } | null;
+}
+
+interface PlayingControlsProps {
+  currentRound: CurrentRoundData;
+  totalRounds: number;
+  onStartRound: () => void;
+  onStartCountdown: () => void;
+  onReveal: () => void;
+  onComplete: () => void;
+  onPause: () => void;
+  onFinish: () => void;
+}
+
+function PlayingControls({
+  currentRound,
+  totalRounds,
+  onStartRound,
+  onStartCountdown,
+  onReveal,
+  onComplete,
+  onPause,
+  onFinish,
+}: PlayingControlsProps): React.ReactElement {
+  const utm = extractLocationUtm(currentRound.location);
+  const showGuessProgress =
+    currentRound.status === "showing" || currentRound.status === "guessing";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-semibold">
+            Runde {currentRound.roundNumber}/{totalRounds}
+          </span>
+          <RoundStatus status={currentRound.status} />
+          <GameMode mode={currentRound.mode} />
+        </div>
+        {currentRound.location && (
+          <span className="text-muted-foreground">
+            {currentRound.location.name}
+          </span>
+        )}
+      </div>
+
+      {currentRound.location && (
+        <div className="p-3 bg-muted rounded-lg">
+          <UtmDisplayCompact
+            utmZone={utm.utmZone}
+            easting={utm.utmEasting}
+            northing={utm.utmNorthing}
+          />
+        </div>
+      )}
+
+      {currentRound.status === "guessing" && currentRound.countdownEndsAt && (
+        <div className="flex justify-center py-4">
+          <CountdownTimer
+            endsAt={currentRound.countdownEndsAt}
+            totalSeconds={currentRound.timeLimit}
+            size="lg"
+          />
+        </div>
+      )}
+
+      {showGuessProgress && (
+        <GuessProgress
+          guessCount={currentRound.guessCount ?? 0}
+          totalTeams={currentRound.totalTeams ?? 0}
+        />
+      )}
+
+      <Separator />
+
+      <RoundControls
+        roundStatus={currentRound.status}
+        roundNumber={currentRound.roundNumber}
+        totalRounds={totalRounds}
+        timeLimit={currentRound.timeLimit}
+        onStartRound={onStartRound}
+        onStartCountdown={onStartCountdown}
+        onReveal={onReveal}
+        onComplete={onComplete}
+      />
+
+      <GameControls
+        gameStatus="playing"
+        onPause={onPause}
+        onResume={() => {}}
+        onFinish={onFinish}
+      />
+    </div>
+  );
+}
+
+interface PausedControlsProps {
+  onResume: () => void;
+}
+
+function PausedControls({ onResume }: PausedControlsProps): React.ReactElement {
+  return (
+    <div className="space-y-4 text-center">
+      <p className="text-warning font-semibold">Spiel pausiert</p>
+      <Button size="lg" className="w-full" onClick={onResume}>
+        Fortsetzen
+      </Button>
+    </div>
+  );
+}
+
+interface FinishedControlsProps {
+  onNewGame: () => void;
+}
+
+function FinishedControls({
+  onNewGame,
+}: FinishedControlsProps): React.ReactElement {
+  return (
+    <div className="space-y-4 text-center">
+      <p className="text-correct font-semibold">Spiel beendet</p>
+      <Button variant="outline" onClick={onNewGame}>
+        Neues Spiel erstellen
+      </Button>
+    </div>
   );
 }
 
@@ -340,7 +359,7 @@ export default function GameControlPage({
   params,
 }: {
   params: Promise<{ gameId: string }>;
-}) {
+}): React.ReactElement {
   const { gameId } = use(params);
   const router = useRouter();
 
