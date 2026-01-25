@@ -3,9 +3,9 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type {
-  RoundStatus as RoundStatusType,
-  GameStatus as GameStatusType,
   GameMode as GameModeType,
+  GameStatus as GameStatusType,
+  RoundStatus as RoundStatusType,
 } from "@/types/game";
 
 interface RoundStatusProps {

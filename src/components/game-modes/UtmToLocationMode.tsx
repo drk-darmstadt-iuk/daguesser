@@ -11,21 +11,18 @@ import {
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { Card, CardContent } from "@/components/ui/card";
 import { utmToLatLng } from "@/lib/utm";
+import { extractLocationUtm, parseUtmZone } from "@/lib/utm-helpers";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
   GameModeShowingProps,
 } from "./types";
 
-interface UtmToLocationShowingProps extends GameModeShowingProps {}
-
 export function UtmToLocationShowing({
   location,
   timeLimit,
-}: UtmToLocationShowingProps): React.ReactElement {
-  const utmZone = location.utmZone ?? "32U";
-  const utmEasting = location.utmEasting ?? 0;
-  const utmNorthing = location.utmNorthing ?? 0;
+}: GameModeShowingProps): React.ReactElement {
+  const { utmZone, utmEasting, utmNorthing } = extractLocationUtm(location);
 
   return (
     <>
@@ -46,8 +43,6 @@ export function UtmToLocationShowing({
   );
 }
 
-interface UtmToLocationGuessingProps extends GameModeGuessingProps {}
-
 export function UtmToLocationGuessing({
   location,
   countdownEndsAt,
@@ -55,10 +50,8 @@ export function UtmToLocationGuessing({
   hasGuessed,
   mapInputState,
   mapInputActions,
-}: UtmToLocationGuessingProps): React.ReactElement {
-  const utmZone = location.utmZone ?? "32U";
-  const utmEasting = location.utmEasting ?? 0;
-  const utmNorthing = location.utmNorthing ?? 0;
+}: GameModeGuessingProps): React.ReactElement {
+  const { utmZone, utmEasting, utmNorthing } = extractLocationUtm(location);
 
   if (hasGuessed) {
     return (
@@ -134,44 +127,25 @@ export function UtmToLocationGuessing({
   );
 }
 
-interface UtmToLocationRevealProps extends GameModeRevealProps {}
-
 export function UtmToLocationReveal({
   location,
   guessResult,
-}: UtmToLocationRevealProps): React.ReactElement {
-  const utmZone = location.utmZone ?? "32U";
-  const utmEasting = location.utmEasting ?? 0;
-  const utmNorthing = location.utmNorthing ?? 0;
+}: GameModeRevealProps): React.ReactElement {
+  const { utmZone, utmEasting, utmNorthing } = extractLocationUtm(location);
 
-  // Get correct position from location
-  let correctPosition: { lat: number; lng: number };
-  if (location.latitude !== undefined && location.longitude !== undefined) {
-    correctPosition = { lat: location.latitude, lng: location.longitude };
-  } else {
-    // Convert from UTM if lat/lng not available
-    const zone = Number.parseInt(utmZone.slice(0, -1), 10);
-    const hemisphere = utmZone.slice(-1).toUpperCase() >= "N" ? "N" : "S";
-    const latLng = utmToLatLng({
-      zone,
-      hemisphere: hemisphere as "N" | "S",
-      easting: utmEasting,
-      northing: utmNorthing,
-    });
-    correctPosition = { lat: latLng.latitude, lng: latLng.longitude };
-  }
+  // Get correct position from location or convert from UTM
+  const correctPosition = getCorrectPosition(location, {
+    utmZone,
+    utmEasting,
+    utmNorthing,
+  });
 
   // Get guessed position from result
-  let guessedPosition: { lat: number; lng: number } | null = null;
-  if (
-    guessResult?.guessedLatitude !== undefined &&
-    guessResult?.guessedLongitude !== undefined
-  ) {
-    guessedPosition = {
-      lat: guessResult.guessedLatitude,
-      lng: guessResult.guessedLongitude,
-    };
-  }
+  const guessedPosition =
+    guessResult?.guessedLatitude != null &&
+    guessResult?.guessedLongitude != null
+      ? { lat: guessResult.guessedLatitude, lng: guessResult.guessedLongitude }
+      : null;
 
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4">
@@ -182,15 +156,13 @@ export function UtmToLocationReveal({
           <LocationSolutionMap
             correctPosition={correctPosition}
             guessedPosition={guessedPosition}
-            distanceMeters={guessResult?.distanceMeters ?? undefined}
             showDistanceLine
             showUtmGrid
           />
 
-          {guessResult?.distanceMeters !== undefined &&
-            guessResult.distanceMeters !== null && (
-              <DistanceDisplay distanceMeters={guessResult.distanceMeters} />
-            )}
+          {guessResult?.distanceMeters != null && (
+            <DistanceDisplay distanceMeters={guessResult.distanceMeters} />
+          )}
         </>
       )}
 
@@ -203,4 +175,25 @@ export function UtmToLocationReveal({
       )}
     </div>
   );
+}
+
+/**
+ * Get correct position from location, converting from UTM if needed.
+ */
+function getCorrectPosition(
+  location: { latitude?: number; longitude?: number },
+  utm: { utmZone: string; utmEasting: number; utmNorthing: number },
+): { lat: number; lng: number } {
+  if (location.latitude != null && location.longitude != null) {
+    return { lat: location.latitude, lng: location.longitude };
+  }
+
+  const { zone, hemisphere } = parseUtmZone(utm.utmZone);
+  const latLng = utmToLatLng({
+    zone,
+    hemisphere,
+    easting: utm.utmEasting,
+    northing: utm.utmNorthing,
+  });
+  return { lat: latLng.latitude, lng: latLng.longitude };
 }

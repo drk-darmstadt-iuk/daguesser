@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { Crosshair } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { JoinCodeInput } from "@/components/JoinCodeInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/convex/_generated/api";
 
 export default function Home() {
   const router = useRouter();

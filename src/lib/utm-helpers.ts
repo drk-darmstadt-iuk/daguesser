@@ -73,3 +73,16 @@ export function isUtmInputComplete(
 ): boolean {
   return eastingInput.length === 3 && northingInput.length === 3;
 }
+
+/**
+ * Parses a UTM zone string into zone number and hemisphere.
+ * Example: "32U" -> { zone: 32, hemisphere: "N" }
+ */
+export function parseUtmZone(utmZone: string): {
+  zone: number;
+  hemisphere: "N" | "S";
+} {
+  const zone = Number.parseInt(utmZone.slice(0, -1), 10);
+  const hemisphere = utmZone.slice(-1).toUpperCase() >= "N" ? "N" : "S";
+  return { zone, hemisphere: hemisphere as "N" | "S" };
+}

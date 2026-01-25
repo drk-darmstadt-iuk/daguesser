@@ -1,8 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { RoundStatus, GameMode } from "./RoundStatus";
+import { cn } from "@/lib/utils";
+import { GameMode, RoundStatus } from "./RoundStatus";
 
 interface GameHeaderProps {
   /** Game join code */

@@ -81,18 +81,18 @@ export function MapPlanZeiger({
   useEffect(() => {
     if (!isDragging) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number, clientY: number) => {
       if (!dragStartRef.current) return;
 
       const container = containerRef.current?.parentElement;
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      const deltaX = e.clientX - dragStartRef.current.x;
-      const deltaY = e.clientY - dragStartRef.current.y;
+      const deltaX = clientX - dragStartRef.current.x;
+      const deltaY = clientY - dragStartRef.current.y;
 
       // Update drag start for continuous dragging
-      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      dragStartRef.current = { x: clientX, y: clientY };
 
       // Report the delta movement (will be used to pan the map)
       onPositionChange({
@@ -101,40 +101,27 @@ export function MapPlanZeiger({
       });
     };
 
+    const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
     const handleTouchMove = (e: TouchEvent) => {
-      if (!dragStartRef.current) return;
-
-      const container = containerRef.current?.parentElement;
-      if (!container) return;
-
       const touch = e.touches[0];
-      const rect = container.getBoundingClientRect();
-      const deltaX = touch.clientX - dragStartRef.current.x;
-      const deltaY = touch.clientY - dragStartRef.current.y;
-
-      dragStartRef.current = { x: touch.clientX, y: touch.clientY };
-
-      onPositionChange({
-        x: rect.width / 2 - deltaX,
-        y: rect.height / 2 - deltaY,
-      });
+      handleMove(touch.clientX, touch.clientY);
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       setIsDragging(false);
       dragStartRef.current = null;
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mouseup", handleEnd);
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
-    window.addEventListener("touchend", handleMouseUp);
+    window.addEventListener("touchend", handleEnd);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mouseup", handleEnd);
       window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleMouseUp);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [isDragging, onPositionChange]);
 

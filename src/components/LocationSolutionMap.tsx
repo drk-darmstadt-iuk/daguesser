@@ -1,6 +1,5 @@
 "use client";
 
-import type { LngLatBounds } from "maplibre-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CrosshairMarkerIcon } from "@/components/MapPlanZeiger";
 import { UtmGridOverlay } from "@/components/UtmGridOverlay";
@@ -36,8 +35,6 @@ interface LocationSolutionMapProps {
   guessedPosition?: Position | null;
   /** All team guesses (for beamer view) */
   teamGuesses?: TeamGuess[];
-  /** Distance in meters */
-  distanceMeters?: number;
   /** Whether to show distance line */
   showDistanceLine?: boolean;
   /** Whether to show UTM grid */
@@ -56,7 +53,6 @@ export function LocationSolutionMap({
   correctPosition,
   guessedPosition,
   teamGuesses,
-  distanceMeters,
   showDistanceLine = true,
   showUtmGrid = true,
   className,

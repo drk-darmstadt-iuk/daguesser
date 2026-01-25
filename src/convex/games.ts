@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { gameMode, difficulty } from "./schema";
+import { difficulty, gameMode } from "./schema";
 
 /**
  * Generate a random 6-character alphanumeric join code

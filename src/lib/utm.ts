@@ -167,8 +167,7 @@ export function utmToLatLng(utm: UtmCoordinate): LatLngCoordinate {
   const T1 = Math.tan(phi1) ** 2;
   const C1 = WGS84.ep2 * Math.cos(phi1) ** 2;
   const R1 =
-    (WGS84.a * (1 - WGS84.e2)) /
-    Math.pow(1 - WGS84.e2 * Math.sin(phi1) ** 2, 1.5);
+    (WGS84.a * (1 - WGS84.e2)) / (1 - WGS84.e2 * Math.sin(phi1) ** 2) ** 1.5;
   const D = x / (N1 * UTM.k0);
 
   const lat =

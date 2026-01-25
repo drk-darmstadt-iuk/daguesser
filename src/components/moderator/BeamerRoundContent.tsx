@@ -6,7 +6,7 @@ import { LocationSolutionMap } from "@/components/LocationSolutionMap";
 import { RoundImage } from "@/components/RoundImage";
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { utmToLatLng } from "@/lib/utm";
-import { extractLocationUtm } from "@/lib/utm-helpers";
+import { extractLocationUtm, parseUtmZone } from "@/lib/utm-helpers";
 import { GuessProgress } from "./GuessProgress";
 import type {
   GameModeValue,
@@ -215,42 +215,25 @@ function BeamerRevealContent({
   const utm = extractLocationUtm(location);
 
   // Get correct position for utmToLocation mode
-  let correctPosition: { lat: number; lng: number } | null = null;
-  if (mode === "utmToLocation") {
-    if (location?.latitude !== undefined && location?.longitude !== undefined) {
-      correctPosition = { lat: location.latitude, lng: location.longitude };
-    } else {
-      // Convert from UTM
-      const zone = Number.parseInt(utm.utmZone.slice(0, -1), 10);
-      const hemisphere = utm.utmZone.slice(-1).toUpperCase() >= "N" ? "N" : "S";
-      const latLng = utmToLatLng({
-        zone,
-        hemisphere: hemisphere as "N" | "S",
-        easting: utm.utmEasting,
-        northing: utm.utmNorthing,
-      });
-      correctPosition = { lat: latLng.latitude, lng: latLng.longitude };
-    }
-  }
+  const correctPosition =
+    mode === "utmToLocation" ? getCorrectPosition(location, utm) : null;
 
   // Build team guesses for map
   const teamGuesses =
     mode === "utmToLocation" && roundGuesses
-      ? roundGuesses
-          .filter(
-            (g) =>
-              g.guessedLatitude !== undefined &&
-              g.guessedLongitude !== undefined,
-          )
-          .map((g) => ({
-            teamName: g.teamName,
-            position: {
-              lat: g.guessedLatitude!,
-              lng: g.guessedLongitude!,
+      ? roundGuesses.flatMap((g) => {
+          if (g.guessedLatitude == null || g.guessedLongitude == null) {
+            return [];
+          }
+          return [
+            {
+              teamName: g.teamName,
+              position: { lat: g.guessedLatitude, lng: g.guessedLongitude },
+              score: g.score,
+              distanceMeters: g.distanceMeters,
             },
-            score: g.score,
-            distanceMeters: g.distanceMeters,
-          }))
+          ];
+        })
       : [];
 
   return (
@@ -291,4 +274,25 @@ function BeamerRevealContent({
       )}
     </>
   );
+}
+
+/**
+ * Get correct position from location, converting from UTM if needed.
+ */
+function getCorrectPosition(
+  location: LocationData | undefined,
+  utm: { utmZone: string; utmEasting: number; utmNorthing: number },
+): { lat: number; lng: number } {
+  if (location?.latitude != null && location?.longitude != null) {
+    return { lat: location.latitude, lng: location.longitude };
+  }
+
+  const { zone, hemisphere } = parseUtmZone(utm.utmZone);
+  const latLng = utmToLatLng({
+    zone,
+    hemisphere,
+    easting: utm.utmEasting,
+    northing: utm.utmNorthing,
+  });
+  return { lat: latLng.latitude, lng: latLng.longitude };
 }

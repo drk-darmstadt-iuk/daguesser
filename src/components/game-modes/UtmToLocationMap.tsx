@@ -55,7 +55,9 @@ export function UtmToLocationMap({
     easting: number;
     northing: number;
   } | null>(null);
-  const [hasPosition, setHasPosition] = useState(false);
+
+  // Derive hasPosition from currentUtm instead of separate state
+  const hasPosition = currentUtm !== null;
 
   // Update current position when map moves
   const updateCurrentPosition = useCallback(() => {
@@ -72,7 +74,6 @@ export function UtmToLocationMap({
     });
 
     onPositionChange({ lat: center.lat, lng: center.lng });
-    setHasPosition(true);
   }, [onPositionChange]);
 
   // Handle position change from MapPlanZeiger (pan the map)

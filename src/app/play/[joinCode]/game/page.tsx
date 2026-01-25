@@ -3,14 +3,9 @@
 import { useMutation, useQuery } from "convex/react";
 import { Pause } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { GameHeader } from "@/components/GameHeader";
-import type {
-  GuessResult,
-  LocationData,
-  MapInputActions,
-  MapInputState,
-} from "@/components/game-modes";
+import type { GuessResult, LocationData } from "@/components/game-modes";
 import { GameModeRenderer } from "@/components/game-modes";
 import { LeaderboardCompact } from "@/components/Leaderboard";
 import { RoundScoreResult } from "@/components/TeamScoreCard";
@@ -154,14 +149,6 @@ export default function TeamGame({
     }
   }
 
-  // Callback for setting guessed position (for map mode)
-  const handleSetGuessedPosition = useCallback(
-    (position: { lat: number; lng: number } | null) => {
-      setGuessedPosition(position);
-    },
-    [],
-  );
-
   if (
     gameByCode === undefined ||
     game === undefined ||
@@ -244,7 +231,7 @@ export default function TeamGame({
                 submitError,
               }}
               mapInputActions={{
-                setGuessedPosition: handleSetGuessedPosition,
+                setGuessedPosition,
                 handleSubmit,
               }}
             />

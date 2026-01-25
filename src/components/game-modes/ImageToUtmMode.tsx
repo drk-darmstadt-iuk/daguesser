@@ -14,12 +14,10 @@ import type {
   GameModeShowingProps,
 } from "./types";
 
-interface ImageToUtmShowingProps extends GameModeShowingProps {}
-
 export function ImageToUtmShowing({
   location,
   timeLimit,
-}: ImageToUtmShowingProps): React.ReactElement | null {
+}: GameModeShowingProps): React.ReactElement | null {
   const imageUrl = location.imageUrls?.[0];
 
   if (!imageUrl) {
@@ -40,8 +38,6 @@ export function ImageToUtmShowing({
   );
 }
 
-interface ImageToUtmGuessingProps extends GameModeGuessingProps {}
-
 export function ImageToUtmGuessing({
   location,
   countdownEndsAt,
@@ -49,7 +45,7 @@ export function ImageToUtmGuessing({
   hasGuessed,
   inputState,
   inputActions,
-}: ImageToUtmGuessingProps): React.ReactElement | null {
+}: GameModeGuessingProps): React.ReactElement | null {
   const imageUrl = location.imageUrls?.[0];
   const { eastingInput, northingInput, isSubmitting, submitError } = inputState;
   const { setEastingInput, setNorthingInput, handleSubmit } = inputActions;
@@ -100,12 +96,10 @@ export function ImageToUtmGuessing({
   );
 }
 
-interface ImageToUtmRevealProps extends GameModeRevealProps {}
-
 export function ImageToUtmReveal({
   location,
   guessResult,
-}: ImageToUtmRevealProps): React.ReactElement {
+}: GameModeRevealProps): React.ReactElement {
   const correctEasting = location.utmEasting ?? 0;
   const correctNorthing = location.utmNorthing ?? 0;
 

@@ -1,15 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import {
+  Authenticated,
+  AuthLoading,
+  Unauthenticated,
+  useQuery,
+} from "convex/react";
 import { Crosshair, Github } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { useRouter } from "next/navigation";
+import { GameStatus } from "@/components/RoundStatus";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { GameStatus } from "@/components/RoundStatus";
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 function ModeratorDashboard() {
   const router = useRouter();

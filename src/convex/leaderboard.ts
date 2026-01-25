@@ -1,8 +1,8 @@
 import { getAuthSessionId, getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
 
 export interface LeaderboardEntry {
   teamId: string;

@@ -1,7 +1,7 @@
 import { getAuthSessionId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { haversineDistance, utmDistance, calculateScore } from "./lib/scoring";
+import { calculateScore, haversineDistance, utmDistance } from "./lib/scoring";
 
 /**
  * Submit a guess for the current round

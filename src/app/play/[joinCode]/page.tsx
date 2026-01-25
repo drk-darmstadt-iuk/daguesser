@@ -1,11 +1,10 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useConvexAuth } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Clock } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
 import { LobbyHeader } from "@/components/GameHeader";
 import { LoadingPage } from "@/components/states/LoadingPage";
 import { NotFoundPage } from "@/components/states/NotFoundPage";
@@ -14,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { api } from "@/convex/_generated/api";
 
 interface TeamLobbyProps {
   params: Promise<{ joinCode: string }>;
@@ -153,10 +153,7 @@ export default function TeamLobby({
           />
         )}
 
-        <TeamList
-          teams={activeTeams}
-          myTeamId={myTeam?._id ?? null}
-        />
+        <TeamList teams={activeTeams} myTeamId={myTeam?._id ?? null} />
       </div>
     </main>
   );
