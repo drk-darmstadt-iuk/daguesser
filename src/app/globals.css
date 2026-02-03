@@ -277,4 +277,17 @@
       width: 0;
     }
   }
+
+  /* Semantic map height utilities */
+  .map-height-supplementary {
+    @apply h-[200px] md:h-[250px];
+  }
+
+  .map-height-primary {
+    @apply h-[300px] md:h-[400px];
+  }
+
+  .map-height-interactive {
+    @apply h-[60vh] md:h-[70vh];
+  }
 }

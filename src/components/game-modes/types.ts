@@ -12,6 +12,8 @@ export type {
   LocationData,
   MapInputActions,
   MapInputState,
+  MultipleChoiceInputActions,
+  MultipleChoiceInputState,
   RoundStatus,
 } from "@/types/game";
 

@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import type { GameMode as GameModeType } from "@/types/game";
 import { GameMode, RoundStatus } from "./RoundStatus";
 
 interface GameHeaderProps {
@@ -14,7 +15,7 @@ interface GameHeaderProps {
   /** Round status */
   roundStatus?: "pending" | "showing" | "guessing" | "reveal" | "completed";
   /** Game mode */
-  mode?: "imageToUtm" | "utmToLocation";
+  mode?: GameModeType;
   /** Team name (for team view) */
   teamName?: string;
   /** Team score */

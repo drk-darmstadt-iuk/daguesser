@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ScoreBreakdownInline } from "@/components/ScoreBreakdown";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,8 @@ interface TeamScoreCardProps {
   rank?: number;
   lastRoundScore?: number;
   lastRoundDistance?: number;
+  lastRoundDistanceScore?: number;
+  lastRoundTimeBonus?: number;
   isActive?: boolean;
   isHighlighted?: boolean;
   className?: string;
@@ -22,6 +25,8 @@ export function TeamScoreCard({
   rank,
   lastRoundScore,
   lastRoundDistance,
+  lastRoundDistanceScore,
+  lastRoundTimeBonus,
   isActive = true,
   isHighlighted = false,
   className,
@@ -100,29 +105,39 @@ export function TeamScoreCard({
 
         {/* Last round info */}
         {lastRoundScore !== undefined && (
-          <div className="mt-4 flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground">Letzte Runde:</span>
-              <span
-                className={cn(
-                  "font-mono font-bold",
-                  lastRoundScore > 0 ? "text-correct" : "text-muted-foreground",
-                )}
-              >
-                +{lastRoundScore}
-              </span>
-            </div>
-
-            {lastRoundDistance !== undefined && (
+          <div className="mt-4 flex flex-col gap-2 text-sm">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <span className="text-muted-foreground">Entfernung:</span>
-                <span className="font-mono text-secondary">
-                  {lastRoundDistance < 1000
-                    ? `${Math.round(lastRoundDistance)}m`
-                    : `${(lastRoundDistance / 1000).toFixed(1)}km`}
+                <span className="text-muted-foreground">Letzte Runde:</span>
+                <span
+                  className={cn(
+                    "font-mono font-bold",
+                    lastRoundScore > 0
+                      ? "text-correct"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  +{lastRoundScore}
                 </span>
               </div>
-            )}
+
+              {lastRoundDistance !== undefined && (
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Entfernung:</span>
+                  <span className="font-mono text-secondary">
+                    {lastRoundDistance < 1000
+                      ? `${Math.round(lastRoundDistance)}m`
+                      : `${(lastRoundDistance / 1000).toFixed(1)}km`}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Score breakdown */}
+            <ScoreBreakdownInline
+              distanceScore={lastRoundDistanceScore}
+              timeBonus={lastRoundTimeBonus}
+            />
           </div>
         )}
       </CardContent>
@@ -156,11 +171,15 @@ export function TeamScoreCompact({
 export function RoundScoreResult({
   score,
   distanceMeters,
+  distanceScore,
+  timeBonus,
   rating,
   className,
 }: {
   score: number;
   distanceMeters: number;
+  distanceScore?: number;
+  timeBonus?: number;
   rating: "perfect" | "excellent" | "good" | "fair" | "poor" | "miss";
   className?: string;
 }) {
@@ -188,6 +207,22 @@ export function RoundScoreResult({
         </span>
         <span className="text-muted-foreground">Punkte</span>
       </div>
+
+      {/* Score breakdown */}
+      {distanceScore !== undefined &&
+        timeBonus !== undefined &&
+        timeBonus > 0 && (
+          <div className="flex flex-col gap-1 text-sm text-muted-foreground w-full max-w-[200px]">
+            <div className="flex justify-between font-mono">
+              <span>Genauigkeit:</span>
+              <span className="text-foreground">+{distanceScore}</span>
+            </div>
+            <div className="flex justify-between font-mono">
+              <span>Geschwindigkeit:</span>
+              <span className="text-secondary">+{timeBonus}</span>
+            </div>
+          </div>
+        )}
 
       {/* Distance */}
       <div className="flex items-center gap-2 text-muted-foreground">

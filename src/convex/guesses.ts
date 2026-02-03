@@ -1,7 +1,17 @@
 import { getAuthSessionId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { calculateScore, haversineDistance, utmDistance } from "./lib/scoring";
+import { isValidBearing, isValidDistance } from "./lib/bearing";
+import {
+  calculateDistanceScore,
+  calculateTimeBonus,
+  calculateTotalScore,
+  haversineDistance,
+  utmDistance,
+} from "./lib/scoring";
+
+// Max score for multiple choice correct answers
+const MC_CORRECT_BASE_SCORE = 1000;
 
 /**
  * Submit a guess for the current round
@@ -12,9 +22,12 @@ export const submit = mutation({
     // For imageToUtm mode
     utmEasting: v.optional(v.number()),
     utmNorthing: v.optional(v.number()),
-    // For utmToLocation mode
+    // For utmToLocation and directionDistance modes
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
+    // For multipleChoice mode
+    mcOptionIndex: v.optional(v.number()),
+    mcOptionName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const sessionId = await getAuthSessionId(ctx);
@@ -68,12 +81,23 @@ export const submit = mutation({
       throw new Error("Location not found");
     }
 
+    // Calculate response time (time since countdown started)
+    const startTime = round.countdownEndsAt
+      ? round.countdownEndsAt - round.timeLimit * 1000
+      : 0;
+    const responseTimeMs = startTime ? Date.now() - startTime : 0;
+
     // Calculate distance and score based on mode
     let distanceMeters: number;
+    let distanceScore: number;
+    let timeBonus: number;
+    let score: number;
     let guessedUtmEasting: number | undefined;
     let guessedUtmNorthing: number | undefined;
     let guessedLatitude: number | undefined;
     let guessedLongitude: number | undefined;
+    let guessedOptionIndex: number | undefined;
+    let guessedOptionName: string | undefined;
 
     if (round.mode === "imageToUtm") {
       // Team guessed UTM coordinates
@@ -90,13 +114,36 @@ export const submit = mutation({
         args.utmEasting,
         args.utmNorthing,
       );
-    } else {
+
+      distanceScore = calculateDistanceScore(distanceMeters);
+      timeBonus = calculateTimeBonus(responseTimeMs, round.timeLimit);
+      score = calculateTotalScore(distanceScore, timeBonus);
+    } else if (
+      round.mode === "utmToLocation" ||
+      round.mode === "directionDistance"
+    ) {
       // Team selected location on map
       if (args.latitude === undefined || args.longitude === undefined) {
         throw new Error("Map coordinates required for this mode");
       }
       guessedLatitude = args.latitude;
       guessedLongitude = args.longitude;
+
+      // Validate direction/distance mode location data
+      if (round.mode === "directionDistance") {
+        if (
+          location.bearingDegrees !== undefined &&
+          !isValidBearing(location.bearingDegrees)
+        ) {
+          throw new Error("Invalid bearing in location data");
+        }
+        if (
+          location.distanceMeters !== undefined &&
+          !isValidDistance(location.distanceMeters)
+        ) {
+          throw new Error("Invalid distance in location data");
+        }
+      }
 
       // Calculate distance using Haversine
       distanceMeters = haversineDistance(
@@ -105,16 +152,37 @@ export const submit = mutation({
         args.latitude,
         args.longitude,
       );
+
+      distanceScore = calculateDistanceScore(distanceMeters);
+      timeBonus = calculateTimeBonus(responseTimeMs, round.timeLimit);
+      score = calculateTotalScore(distanceScore, timeBonus);
+    } else if (round.mode === "multipleChoice") {
+      // Team selected an option
+      if (args.mcOptionIndex === undefined || args.mcOptionName === undefined) {
+        throw new Error("Option selection required for this mode");
+      }
+
+      // Validate option index (0-3)
+      if (args.mcOptionIndex < 0 || args.mcOptionIndex > 3) {
+        throw new Error("Invalid option index (must be 0-3)");
+      }
+
+      guessedOptionIndex = args.mcOptionIndex;
+      guessedOptionName = args.mcOptionName;
+
+      // Check if correct
+      const isCorrect = args.mcOptionName === location.name;
+
+      // For MC mode: correct = base score + time bonus, wrong = 0
+      distanceMeters = 0; // No distance concept in MC mode
+      distanceScore = isCorrect ? MC_CORRECT_BASE_SCORE : 0;
+      timeBonus = isCorrect
+        ? calculateTimeBonus(responseTimeMs, round.timeLimit)
+        : 0;
+      score = calculateTotalScore(distanceScore, timeBonus);
+    } else {
+      throw new Error(`Unknown game mode: ${round.mode}`);
     }
-
-    // Calculate score
-    const score = calculateScore(distanceMeters);
-
-    // Calculate response time (time since countdown started)
-    const startTime = round.countdownEndsAt
-      ? round.countdownEndsAt - round.timeLimit * 1000
-      : 0;
-    const responseTimeMs = startTime ? Date.now() - startTime : 0;
 
     // Create the guess (score is calculated but NOT added to team yet - happens on reveal)
     const guessId = await ctx.db.insert("guesses", {
@@ -124,8 +192,12 @@ export const submit = mutation({
       guessedUtmNorthing,
       guessedLatitude,
       guessedLongitude,
+      guessedOptionIndex,
+      guessedOptionName,
       distanceMeters: Math.round(distanceMeters),
       score,
+      distanceScore,
+      timeBonus,
       responseTimeMs: Math.max(0, responseTimeMs),
       submittedAt: Date.now(),
     });
@@ -159,13 +231,16 @@ export const getForRound = query({
       .withIndex("by_round", (q) => q.eq("roundId", args.roundId))
       .collect();
 
-    // Get team info for each guess
+    // Get team info for each guess and apply backfill for old data
     const guessesWithTeams = await Promise.all(
       guesses.map(async (guess) => {
         const team = await ctx.db.get(guess.teamId);
         return {
           ...guess,
           teamName: team?.name ?? "Unknown",
+          // Backfill for old guesses without score breakdown
+          distanceScore: guess.distanceScore ?? guess.score,
+          timeBonus: guess.timeBonus ?? 0,
         };
       }),
     );
@@ -210,6 +285,10 @@ export const getMyGuess = query({
     const isRevealed =
       round.status === "reveal" || round.status === "completed";
 
+    // Backfill for old guesses without score breakdown
+    const distanceScore = guess.distanceScore ?? guess.score;
+    const timeBonus = guess.timeBonus ?? 0;
+
     return {
       _id: guess._id,
       _creationTime: guess._creationTime,
@@ -219,10 +298,14 @@ export const getMyGuess = query({
       guessedUtmNorthing: guess.guessedUtmNorthing,
       guessedLatitude: guess.guessedLatitude,
       guessedLongitude: guess.guessedLongitude,
+      guessedOptionIndex: guess.guessedOptionIndex,
+      guessedOptionName: guess.guessedOptionName,
       submittedAt: guess.submittedAt,
       responseTimeMs: guess.responseTimeMs,
       // Hide score and distance until reveal
       score: isRevealed ? guess.score : undefined,
+      distanceScore: isRevealed ? distanceScore : undefined,
+      timeBonus: isRevealed ? timeBonus : undefined,
       distanceMeters: isRevealed ? guess.distanceMeters : undefined,
       hasSubmitted: true,
     };

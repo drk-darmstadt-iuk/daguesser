@@ -13,7 +13,8 @@
       "!.next",
       "!dist",
       "!build",
-      "!**/_generated"
+      "!**/_generated",
+      "!src/components/ui"
     ]
   },
   "formatter": {
@@ -61,16 +62,5 @@
       "tailwindDirectives": true
     }
   },
-  "overrides": [
-    {
-      "includes": ["src/components/ui/map.tsx"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "useExhaustiveDependencies": "off"
-          }
-        }
-      }
-    }
-  ]
+  "overrides": []
 }

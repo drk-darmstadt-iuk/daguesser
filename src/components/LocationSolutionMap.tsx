@@ -33,6 +33,8 @@ interface LocationSolutionMapProps {
   correctPosition: Position;
   /** User's guessed position (for player view) */
   guessedPosition?: Position | null;
+  /** Starting position (for direction/distance mode) */
+  startPosition?: Position | null;
   /** All team guesses (for beamer view) */
   teamGuesses?: TeamGuess[];
   /** Whether to show distance line */
@@ -41,6 +43,8 @@ interface LocationSolutionMapProps {
   showUtmGrid?: boolean;
   /** Additional class name */
   className?: string;
+  /** ARIA label for accessibility */
+  "aria-label"?: string;
 }
 
 /**
@@ -52,12 +56,14 @@ interface LocationSolutionMapProps {
 export function LocationSolutionMap({
   correctPosition,
   guessedPosition,
+  startPosition,
   teamGuesses,
   showDistanceLine = true,
   showUtmGrid = true,
   className,
+  "aria-label": ariaLabel,
 }: LocationSolutionMapProps) {
-  // Build route coordinates for distance line
+  // Build route coordinates for distance line (guess to correct)
   const distanceLineCoordinates: [number, number][] =
     showDistanceLine && guessedPosition
       ? [
@@ -66,12 +72,22 @@ export function LocationSolutionMap({
         ]
       : [];
 
+  // Build route coordinates for start-to-correct line (direction/distance mode)
+  const startToCorrectLineCoordinates: [number, number][] = startPosition
+    ? [
+        [startPosition.lng, startPosition.lat],
+        [correctPosition.lng, correctPosition.lat],
+      ]
+    : [];
+
   return (
     <div
       className={cn(
-        "relative w-full h-[300px] md:h-[400px] rounded-xl overflow-hidden border border-border",
+        "relative w-full map-height-primary rounded-xl overflow-hidden border border-border",
         className,
       )}
+      role="img"
+      aria-label={ariaLabel}
     >
       <Map
         center={[correctPosition.lng, correctPosition.lat]}
@@ -83,12 +99,24 @@ export function LocationSolutionMap({
         <MapBoundsFitter
           correctPosition={correctPosition}
           guessedPosition={guessedPosition}
+          startPosition={startPosition}
           teamGuesses={teamGuesses}
         />
         {showUtmGrid && <UtmGridOverlay lineOpacity={0.2} />}
         <MapControls position="bottom-right" showZoom />
 
-        {/* Distance line */}
+        {/* Start to correct line (direction/distance mode) */}
+        {startToCorrectLineCoordinates.length === 2 && (
+          <MapRoute
+            coordinates={startToCorrectLineCoordinates}
+            color="#00D9FF"
+            width={3}
+            opacity={0.6}
+            interactive={false}
+          />
+        )}
+
+        {/* Distance line (guess to correct) */}
         {distanceLineCoordinates.length === 2 && (
           <MapRoute
             coordinates={distanceLineCoordinates}
@@ -98,6 +126,24 @@ export function LocationSolutionMap({
             dashArray={[8, 4]}
             interactive={false}
           />
+        )}
+
+        {/* Start position marker (direction/distance mode) */}
+        {startPosition && (
+          <MapMarker longitude={startPosition.lng} latitude={startPosition.lat}>
+            <MarkerContent className="pin-drop">
+              <div className="relative">
+                <div className="absolute -inset-2 rounded-full bg-secondary/20 animate-pulse" />
+                <CrosshairMarkerIcon color="secondary" size={28} />
+              </div>
+            </MarkerContent>
+            <MarkerLabel
+              position="bottom"
+              className="text-secondary font-semibold"
+            >
+              START
+            </MarkerLabel>
+          </MapMarker>
         )}
 
         {/* Correct position marker */}
@@ -160,10 +206,12 @@ export function LocationSolutionMap({
 function MapBoundsFitter({
   correctPosition,
   guessedPosition,
+  startPosition,
   teamGuesses,
 }: {
   correctPosition: Position;
   guessedPosition?: Position | null;
+  startPosition?: Position | null;
   teamGuesses?: TeamGuess[];
 }) {
   const { map, isLoaded } = useMap();
@@ -177,6 +225,10 @@ function MapBoundsFitter({
 
       if (guessedPosition) {
         positions.push(guessedPosition);
+      }
+
+      if (startPosition) {
+        positions.push(startPosition);
       }
 
       if (teamGuesses) {
@@ -220,7 +272,14 @@ function MapBoundsFitter({
     }, 100);
 
     return () => clearTimeout(timeout);
-  }, [isLoaded, map, correctPosition, guessedPosition, teamGuesses]);
+  }, [
+    isLoaded,
+    map,
+    correctPosition,
+    guessedPosition,
+    startPosition,
+    teamGuesses,
+  ]);
 
   return null;
 }

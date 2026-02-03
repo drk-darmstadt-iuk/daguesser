@@ -1,13 +1,20 @@
 "use client";
 
+import { useMemo } from "react";
 import { AnswerComparison } from "@/components/AnswerComparison";
 import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
 import { LocationRevealCard } from "@/components/LocationRevealCard";
+import {
+  DistanceDisplay,
+  LocationSolutionMap,
+} from "@/components/LocationSolutionMap";
 import { RoundImage } from "@/components/RoundImage";
 import { UtmInput } from "@/components/UtmInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getCorrectPosition, getGuessedPosition } from "@/lib/location";
+import { extractLocationUtm } from "@/lib/utm-helpers";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
@@ -103,14 +110,56 @@ export function ImageToUtmReveal({
   const correctEasting = location.utmEasting ?? 0;
   const correctNorthing = location.utmNorthing ?? 0;
 
+  // Extract UTM coordinates for position conversion
+  const { utmZone, utmEasting, utmNorthing } = extractLocationUtm(location);
+
+  // Get correct position for map display
+  const correctPosition = useMemo(
+    () =>
+      getCorrectPosition(location, {
+        utmZone,
+        utmEasting,
+        utmNorthing,
+      }),
+    [location, utmZone, utmEasting, utmNorthing],
+  );
+
+  // Get guessed position from UTM coordinates
+  const guessedPosition = useMemo(
+    () =>
+      getGuessedPosition(
+        guessResult?.guessedUtmEasting,
+        guessResult?.guessedUtmNorthing,
+        utmZone,
+      ),
+    [guessResult?.guessedUtmEasting, guessResult?.guessedUtmNorthing, utmZone],
+  );
+
   return (
-    <LocationRevealCard locationName={location.name}>
-      <AnswerComparison
-        guessedEasting={guessResult?.guessedUtmEasting}
-        guessedNorthing={guessResult?.guessedUtmNorthing}
-        correctEasting={correctEasting}
-        correctNorthing={correctNorthing}
+    <div className="w-full max-w-2xl flex flex-col gap-4">
+      <LocationRevealCard locationName={location.name}>
+        <AnswerComparison
+          guessedEasting={guessResult?.guessedUtmEasting}
+          guessedNorthing={guessResult?.guessedUtmNorthing}
+          correctEasting={correctEasting}
+          correctNorthing={correctNorthing}
+        />
+      </LocationRevealCard>
+
+      <LocationSolutionMap
+        correctPosition={correctPosition}
+        guessedPosition={guessedPosition}
+        showDistanceLine={!!guessedPosition}
+        showUtmGrid
+        className="map-height-supplementary"
+        aria-label="Karte zeigt deine Antwort und die korrekte Position"
       />
-    </LocationRevealCard>
+
+      {guessResult?.distanceMeters != null && (
+        <output aria-live="polite">
+          <DistanceDisplay distanceMeters={guessResult.distanceMeters} />
+        </output>
+      )}
+    </div>
   );
 }

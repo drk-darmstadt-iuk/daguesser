@@ -45,14 +45,14 @@ export function utmDistance(
 }
 
 /**
- * Calculate score based on distance from correct location.
+ * Calculate distance-based score from correct location.
  *
  * Uses an exponential decay formula:
  * - Within 10m: full 1000 points
  * - Beyond 10m: exponential decay
  * - Beyond 5km: 0 points
  */
-export function calculateScore(distanceMeters: number): number {
+export function calculateDistanceScore(distanceMeters: number): number {
   const maxPoints = 1000;
   const perfectRadius = 10;
   const zeroPointRadius = 5000;
@@ -68,4 +68,52 @@ export function calculateScore(distanceMeters: number): number {
     (distanceMeters - perfectRadius) / (zeroPointRadius - perfectRadius);
   const score = maxPoints * Math.exp(-5 * normalizedDistance);
   return Math.round(score);
+}
+
+/**
+ * @deprecated Use calculateDistanceScore instead. Kept for backward compatibility.
+ */
+export function calculateScore(distanceMeters: number): number {
+  return calculateDistanceScore(distanceMeters);
+}
+
+/**
+ * Calculate time bonus for fast submissions.
+ *
+ * Awards 0-100 points based on how quickly the player submitted.
+ * Caps response time at timeLimit to handle clock skew.
+ *
+ * @param responseTimeMs - Time taken to submit in milliseconds
+ * @param timeLimitSeconds - Total time limit for the round in seconds
+ * @returns Time bonus points (0-100)
+ */
+export function calculateTimeBonus(
+  responseTimeMs: number,
+  timeLimitSeconds: number,
+): number {
+  const maxBonus = 100;
+  const timeLimitMs = timeLimitSeconds * 1000;
+
+  // Cap response time to handle clock skew
+  const cappedResponseTime = Math.min(Math.max(0, responseTimeMs), timeLimitMs);
+
+  // Linear decay: 100 points at t=0, 0 points at t=timeLimit
+  const timeBonus = Math.round(
+    maxBonus * (1 - cappedResponseTime / timeLimitMs),
+  );
+  return Math.max(0, timeBonus);
+}
+
+/**
+ * Calculate total score from distance and time components.
+ *
+ * @param distanceScore - Points earned from accuracy (0-1000)
+ * @param timeBonus - Points earned from speed (0-100)
+ * @returns Total score
+ */
+export function calculateTotalScore(
+  distanceScore: number,
+  timeBonus: number,
+): number {
+  return distanceScore + timeBonus;
 }

@@ -120,6 +120,14 @@ const gameModeConfig: Record<
     label: "UTM → Karte",
     description: "Koordinaten finden auf der Karte",
   },
+  directionDistance: {
+    label: "Richtung & Distanz",
+    description: "Von Startpunkt aus Ziel finden",
+  },
+  multipleChoice: {
+    label: "Multiple Choice",
+    description: "Ort aus 4 Optionen wählen",
+  },
 };
 
 export function GameMode({ mode, className }: GameModeProps) {

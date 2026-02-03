@@ -51,3 +51,33 @@ export function getCorrectPosition(
   });
   return { lat: latLng.latitude, lng: latLng.longitude };
 }
+
+/**
+ * Get guessed position from UTM coordinates.
+ *
+ * Converts guessed UTM coordinates to latitude/longitude.
+ * Returns null if easting or northing is undefined.
+ *
+ * @param guessedEasting - The guessed UTM easting value
+ * @param guessedNorthing - The guessed UTM northing value
+ * @param utmZone - The UTM zone string (e.g., "32U")
+ * @returns Position with lat/lng, or null if coordinates are missing
+ */
+export function getGuessedPosition(
+  guessedEasting: number | undefined,
+  guessedNorthing: number | undefined,
+  utmZone: string,
+): LatLngPosition | null {
+  if (guessedEasting == null || guessedNorthing == null) {
+    return null;
+  }
+
+  const { zone, hemisphere } = parseUtmZone(utmZone);
+  const latLng = utmToLatLng({
+    zone,
+    hemisphere,
+    easting: guessedEasting,
+    northing: guessedNorthing,
+  });
+  return { lat: latLng.latitude, lng: latLng.longitude };
+}

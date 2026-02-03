@@ -23,6 +23,8 @@ export const roundStatus = v.union(
 export const gameMode = v.union(
   v.literal("imageToUtm"), // Mode A: Show image, guess UTM coordinates
   v.literal("utmToLocation"), // Mode B: Show UTM, find on map
+  v.literal("directionDistance"), // Mode C: Show start + bearing/distance, find destination
+  v.literal("multipleChoice"), // Mode D: Show image, choose from 4 options
 );
 
 // Difficulty enum values
@@ -81,6 +83,15 @@ const schema = defineSchema(
       category: v.optional(v.string()),
       // Order in the game
       orderIndex: v.number(),
+      // Direction & Distance mode fields
+      bearingDegrees: v.optional(v.number()), // Bearing 0-360 degrees
+      distanceMeters: v.optional(v.number()), // Distance > 0 and < 100000
+      startPointName: v.optional(v.string()), // Name of starting point
+      startPointImageUrls: v.optional(v.array(v.string())), // Images of starting point
+      startPointLatitude: v.optional(v.number()), // Start point coordinates
+      startPointLongitude: v.optional(v.number()),
+      // Multiple Choice mode fields
+      mcOptions: v.optional(v.array(v.string())), // Array of 3 wrong options
     })
       .index("by_game", ["gameId"])
       .index("by_game_and_order", ["gameId", "orderIndex"]),
@@ -137,15 +148,21 @@ const schema = defineSchema(
       // Reference to the team
       teamId: v.id("teams"),
       // For Mode A (imageToUtm): The UTM coordinates guessed
-      // For Mode B (utmToLocation): The lat/lng position selected on map
+      // For Mode B/C (utmToLocation/directionDistance): The lat/lng position selected on map
       guessedUtmEasting: v.optional(v.number()),
       guessedUtmNorthing: v.optional(v.number()),
       guessedLatitude: v.optional(v.number()),
       guessedLongitude: v.optional(v.number()),
-      // Calculated distance from correct location in meters
+      // For Mode D (multipleChoice): The selected option
+      guessedOptionIndex: v.optional(v.number()), // Index 0-3
+      guessedOptionName: v.optional(v.string()), // The option text
+      // Calculated distance from correct location in meters (0 for MC mode if correct)
       distanceMeters: v.number(),
-      // Points awarded for this guess
+      // Points awarded for this guess (total = distanceScore + timeBonus)
       score: v.number(),
+      // Score breakdown components
+      distanceScore: v.optional(v.number()), // Points from accuracy (0-1000)
+      timeBonus: v.optional(v.number()), // Points from speed (0-100)
       // Time taken to submit (from countdown start) in milliseconds
       responseTimeMs: v.number(),
       // Timestamp when submitted

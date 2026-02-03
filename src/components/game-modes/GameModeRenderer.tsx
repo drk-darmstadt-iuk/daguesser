@@ -1,11 +1,25 @@
 "use client";
 
-import type { GameMode } from "@/types/game";
+import type {
+  GameMode,
+  MultipleChoiceInputActions,
+  MultipleChoiceInputState,
+} from "@/types/game";
+import {
+  DirectionDistanceGuessing,
+  DirectionDistanceReveal,
+  DirectionDistanceShowing,
+} from "./DirectionDistanceMode";
 import {
   ImageToUtmGuessing,
   ImageToUtmReveal,
   ImageToUtmShowing,
 } from "./ImageToUtmMode";
+import {
+  MultipleChoiceGuessing,
+  MultipleChoiceReveal,
+  MultipleChoiceShowing,
+} from "./MultipleChoiceMode";
 import type {
   GuessInputActions,
   GuessInputState,
@@ -33,6 +47,10 @@ interface GameModeRendererProps {
   inputActions: GuessInputActions;
   mapInputState?: MapInputState;
   mapInputActions?: MapInputActions;
+  mcInputState?: MultipleChoiceInputState;
+  mcInputActions?: MultipleChoiceInputActions;
+  /** Round ID for deterministic shuffle in MC mode */
+  roundId?: string;
 }
 
 /**
@@ -52,6 +70,9 @@ export function GameModeRenderer({
   inputActions,
   mapInputState,
   mapInputActions,
+  mcInputState,
+  mcInputActions,
+  roundId,
 }: GameModeRendererProps): React.ReactElement | null {
   if (status === "showing") {
     return renderShowingState(mode, location, timeLimit);
@@ -68,11 +89,14 @@ export function GameModeRenderer({
       inputActions,
       mapInputState,
       mapInputActions,
+      mcInputState,
+      mcInputActions,
+      roundId,
     );
   }
 
   if (status === "reveal" || status === "completed") {
-    return renderRevealState(mode, location, guessResult);
+    return renderRevealState(mode, location, guessResult, roundId);
   }
 
   return null;
@@ -88,6 +112,14 @@ function renderShowingState(
       return <ImageToUtmShowing location={location} timeLimit={timeLimit} />;
     case "utmToLocation":
       return <UtmToLocationShowing location={location} timeLimit={timeLimit} />;
+    case "directionDistance":
+      return (
+        <DirectionDistanceShowing location={location} timeLimit={timeLimit} />
+      );
+    case "multipleChoice":
+      return (
+        <MultipleChoiceShowing location={location} timeLimit={timeLimit} />
+      );
     default:
       return null;
   }
@@ -103,6 +135,9 @@ function renderGuessingState(
   inputActions: GuessInputActions,
   mapInputState?: MapInputState,
   mapInputActions?: MapInputActions,
+  mcInputState?: MultipleChoiceInputState,
+  mcInputActions?: MultipleChoiceInputActions,
+  roundId?: string,
 ): React.ReactElement | null {
   switch (mode) {
     case "imageToUtm":
@@ -129,6 +164,31 @@ function renderGuessingState(
           mapInputActions={mapInputActions}
         />
       );
+    case "directionDistance":
+      return (
+        <DirectionDistanceGuessing
+          location={location}
+          countdownEndsAt={countdownEndsAt}
+          timeLimit={timeLimit}
+          hasGuessed={hasGuessed}
+          inputState={inputState}
+          inputActions={inputActions}
+          mapInputState={mapInputState}
+          mapInputActions={mapInputActions}
+        />
+      );
+    case "multipleChoice":
+      return (
+        <MultipleChoiceGuessing
+          location={location}
+          countdownEndsAt={countdownEndsAt}
+          timeLimit={timeLimit}
+          hasGuessed={hasGuessed}
+          roundId={roundId ?? ""}
+          mcInputState={mcInputState}
+          mcInputActions={mcInputActions}
+        />
+      );
     default:
       return null;
   }
@@ -138,6 +198,7 @@ function renderRevealState(
   mode: GameMode,
   location: LocationData,
   guessResult: GuessResult | null,
+  roundId?: string,
 ): React.ReactElement | null {
   switch (mode) {
     case "imageToUtm":
@@ -145,6 +206,21 @@ function renderRevealState(
     case "utmToLocation":
       return (
         <UtmToLocationReveal location={location} guessResult={guessResult} />
+      );
+    case "directionDistance":
+      return (
+        <DirectionDistanceReveal
+          location={location}
+          guessResult={guessResult}
+        />
+      );
+    case "multipleChoice":
+      return (
+        <MultipleChoiceReveal
+          location={location}
+          guessResult={guessResult}
+          roundId={roundId ?? ""}
+        />
       );
     default:
       return null;

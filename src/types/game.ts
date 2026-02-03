@@ -22,8 +22,14 @@ export type RoundStatus =
  * The game mode determines how a round is played.
  * - imageToUtm: Players see an image and guess the UTM coordinates
  * - utmToLocation: Players see UTM coordinates and find the location on a map
+ * - directionDistance: Players see a starting point and bearing/distance, find the destination
+ * - multipleChoice: Players see an image and choose from 4 location options
  */
-export type GameMode = "imageToUtm" | "utmToLocation";
+export type GameMode =
+  | "imageToUtm"
+  | "utmToLocation"
+  | "directionDistance"
+  | "multipleChoice";
 
 /**
  * The possible states of the overall game.
@@ -41,6 +47,15 @@ export interface LocationData {
   latitude?: number;
   longitude?: number;
   imageUrls?: string[];
+  // For direction & distance mode
+  bearingDegrees?: number;
+  distanceMeters?: number;
+  startPointName?: string;
+  startPointImageUrls?: string[];
+  startPointLatitude?: number;
+  startPointLongitude?: number;
+  // For multiple choice mode
+  mcOptions?: string[];
 }
 
 /**
@@ -52,7 +67,12 @@ export interface GuessResult {
   guessedLatitude?: number;
   guessedLongitude?: number;
   score?: number;
+  distanceScore?: number;
+  timeBonus?: number;
   distanceMeters?: number | null;
+  // For multiple choice mode
+  guessedOptionIndex?: number;
+  guessedOptionName?: string;
 }
 
 /**
@@ -88,6 +108,23 @@ export interface MapInputState {
  */
 export interface MapInputActions {
   setGuessedPosition: (position: { lat: number; lng: number } | null) => void;
+  handleSubmit: () => Promise<void>;
+}
+
+/**
+ * State for multiple choice input.
+ */
+export interface MultipleChoiceInputState {
+  selectedOptionIndex: number | null;
+  isSubmitting: boolean;
+  submitError: string | null;
+}
+
+/**
+ * Actions for controlling multiple choice input.
+ */
+export interface MultipleChoiceInputActions {
+  setSelectedOptionIndex: (index: number | null) => void;
   handleSubmit: () => Promise<void>;
 }
 

@@ -218,7 +218,7 @@ interface CurrentRoundData {
   _id: Id<"rounds">;
   roundNumber: number;
   status: "pending" | "showing" | "guessing" | "reveal" | "completed";
-  mode: "imageToUtm" | "utmToLocation";
+  mode: "imageToUtm" | "utmToLocation" | "directionDistance" | "multipleChoice";
   timeLimit: number;
   countdownEndsAt?: number;
   guessCount?: number;
