@@ -251,7 +251,6 @@ export default function TeamGame({
               countdownEndsAt={currentRound.countdownEndsAt ?? null}
               hasGuessed={Boolean(myGuess)}
               guessResult={buildGuessResult(myGuessResult)}
-              roundId={currentRound._id}
               mcShuffledOptions={currentRound.mcShuffledOptions}
               mcCorrectIndex={currentRound.mcCorrectIndex}
               inputState={{

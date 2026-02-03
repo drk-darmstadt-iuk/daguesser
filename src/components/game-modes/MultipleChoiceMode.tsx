@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
 import { LocationRevealCard } from "@/components/LocationRevealCard";
@@ -14,7 +14,6 @@ import {
   FieldTitle,
 } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { buildShuffledMcOptions } from "@/lib/shuffle";
 import { cn } from "@/lib/utils";
 import { CountdownPreviewCard } from "./CountdownPreviewCard";
 import type {
@@ -31,21 +30,17 @@ interface MultipleChoiceGuessingProps
     GameModeGuessingProps,
     "inputState" | "inputActions" | "mapInputState" | "mapInputActions"
   > {
-  /** Round ID for deterministic shuffle (used as fallback seed) */
-  roundId: string;
-  /** Server-provided shuffled options (preferred) */
-  mcShuffledOptions?: string[];
+  /** Server-provided shuffled options */
+  mcShuffledOptions: string[];
   mcInputState?: MultipleChoiceInputState;
   mcInputActions?: MultipleChoiceInputActions;
 }
 
 interface MultipleChoiceRevealProps extends GameModeRevealProps {
-  /** Round ID for deterministic shuffle (used as fallback seed) */
-  roundId: string;
-  /** Server-provided shuffled options (preferred) */
-  mcShuffledOptions?: string[];
-  /** Server-provided correct answer index (only available during reveal) */
-  mcCorrectIndex?: number;
+  /** Server-provided shuffled options */
+  mcShuffledOptions: string[];
+  /** Server-provided correct answer index */
+  mcCorrectIndex: number;
 }
 
 /**
@@ -77,24 +72,14 @@ export function MultipleChoiceGuessing({
   countdownEndsAt,
   timeLimit,
   hasGuessed,
-  roundId,
   mcShuffledOptions,
   mcInputState,
   mcInputActions,
 }: MultipleChoiceGuessingProps): React.ReactElement {
   const imageUrl = location.imageUrls?.[0];
 
-  // Use server-provided shuffle if available, otherwise fall back to client-side computation
-  // (backward compat for old rounds that don't have stored shuffle)
-  const shuffledOptions = useMemo(() => {
-    if (mcShuffledOptions && mcShuffledOptions.length > 0) {
-      return mcShuffledOptions;
-    }
-    // Fallback: compute client-side (only for old rounds)
-    const correctName = location.name ?? "";
-    const wrongOptions = location.mcOptions ?? [];
-    return buildShuffledMcOptions(correctName, wrongOptions, roundId);
-  }, [mcShuffledOptions, location.name, location.mcOptions, roundId]);
+  // Use server-provided shuffled options (server always provides this)
+  const shuffledOptions = mcShuffledOptions;
 
   // Note: mcInputState and mcInputActions are always provided by GameModeRenderer
   const selectedIndex = mcInputState?.selectedOptionIndex ?? null;
@@ -234,28 +219,15 @@ export function MultipleChoiceGuessing({
 export function MultipleChoiceReveal({
   location,
   guessResult,
-  roundId,
   mcShuffledOptions,
   mcCorrectIndex,
 }: MultipleChoiceRevealProps): React.ReactElement {
   const imageUrl = location.imageUrls?.[0];
   const correctName = location.name ?? "";
 
-  // Use server-provided shuffle if available, otherwise fall back to client-side computation
-  const shuffledOptions = useMemo(() => {
-    if (mcShuffledOptions && mcShuffledOptions.length > 0) {
-      return mcShuffledOptions;
-    }
-    // Fallback: compute client-side (only for old rounds)
-    const wrongOptions = location.mcOptions ?? [];
-    return buildShuffledMcOptions(correctName, wrongOptions, roundId);
-  }, [mcShuffledOptions, correctName, location.mcOptions, roundId]);
-
-  // Use server-provided correct index if available, otherwise find it
-  const correctIndex =
-    mcCorrectIndex !== undefined
-      ? mcCorrectIndex
-      : shuffledOptions.indexOf(correctName);
+  // Use server-provided shuffled options and correct index
+  const shuffledOptions = mcShuffledOptions;
+  const correctIndex = mcCorrectIndex;
 
   // Get the user's selection
   const guessedOptionName = guessResult?.guessedOptionName;

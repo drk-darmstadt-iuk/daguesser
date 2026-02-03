@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
 import {
   DirectionDistanceCompact,
@@ -11,7 +10,6 @@ import { LocationSolutionMap } from "@/components/LocationSolutionMap";
 import { RoundImage } from "@/components/RoundImage";
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { getCorrectPosition } from "@/lib/location";
-import { buildShuffledMcOptions } from "@/lib/shuffle";
 import { cn } from "@/lib/utils";
 import { extractLocationUtm } from "@/lib/utm-helpers";
 import { GuessProgress } from "./GuessProgress";
@@ -44,8 +42,6 @@ interface BeamerRoundContentProps {
   allTeamsGuessed?: boolean;
   leaderboard: LeaderboardEntryData[];
   roundGuesses?: RoundGuess[];
-  /** Round ID for deterministic shuffle in MC mode */
-  roundId?: string;
   /** Server-provided shuffled options for MC mode */
   mcShuffledOptions?: string[];
   /** Server-provided correct index for MC mode (only during reveal) */
@@ -63,7 +59,6 @@ export function BeamerRoundContent({
   allTeamsGuessed,
   leaderboard,
   roundGuesses,
-  roundId,
   mcShuffledOptions,
   mcCorrectIndex,
 }: BeamerRoundContentProps): React.ReactElement | null {
@@ -101,7 +96,6 @@ export function BeamerRoundContent({
           location={location}
           leaderboard={leaderboard}
           roundGuesses={roundGuesses}
-          roundId={roundId}
           mcShuffledOptions={mcShuffledOptions}
           mcCorrectIndex={mcCorrectIndex}
         />
@@ -277,7 +271,6 @@ interface BeamerRevealContentProps {
   location: LocationData | undefined;
   leaderboard: LeaderboardEntryData[];
   roundGuesses?: RoundGuess[];
-  roundId?: string;
   mcShuffledOptions?: string[];
   mcCorrectIndex?: number;
 }
@@ -287,7 +280,6 @@ function BeamerRevealContent({
   location,
   leaderboard,
   roundGuesses,
-  roundId,
   mcShuffledOptions,
   mcCorrectIndex,
 }: BeamerRevealContentProps): React.ReactElement {
@@ -327,28 +319,9 @@ function BeamerRevealContent({
           }))
       : [];
 
-  // Use server-provided shuffle if available, otherwise fall back to client-side computation
-  const locationName = location?.name ?? "";
-  const shuffledOptions = useMemo(() => {
-    if (mode !== "multipleChoice") {
-      return [];
-    }
-    if (mcShuffledOptions && mcShuffledOptions.length > 0) {
-      return mcShuffledOptions;
-    }
-    // Fallback: compute client-side (only for old rounds)
-    const mcOptions = location?.mcOptions;
-    if (!mcOptions || !roundId) {
-      return [];
-    }
-    return buildShuffledMcOptions(locationName, mcOptions, roundId);
-  }, [mode, mcShuffledOptions, locationName, location?.mcOptions, roundId]);
-
-  // Use server-provided correct index if available, otherwise find it
-  const correctIndex =
-    mcCorrectIndex !== undefined
-      ? mcCorrectIndex
-      : shuffledOptions.indexOf(locationName);
+  // Use server-provided shuffled options and correct index
+  const shuffledOptions = mcShuffledOptions ?? [];
+  const correctIndex = mcCorrectIndex ?? -1;
 
   return (
     <>

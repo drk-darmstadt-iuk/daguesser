@@ -49,8 +49,6 @@ interface GameModeRendererProps {
   mapInputActions?: MapInputActions;
   mcInputState?: MultipleChoiceInputState;
   mcInputActions?: MultipleChoiceInputActions;
-  /** Round ID for deterministic shuffle in MC mode */
-  roundId?: string;
   /** Server-provided shuffled options for MC mode */
   mcShuffledOptions?: string[];
   /** Server-provided correct index for MC mode (only during reveal) */
@@ -76,7 +74,6 @@ export function GameModeRenderer({
   mapInputActions,
   mcInputState,
   mcInputActions,
-  roundId,
   mcShuffledOptions,
   mcCorrectIndex,
 }: GameModeRendererProps): React.ReactElement | null {
@@ -97,7 +94,6 @@ export function GameModeRenderer({
       mapInputActions,
       mcInputState,
       mcInputActions,
-      roundId,
       mcShuffledOptions,
     );
   }
@@ -107,7 +103,6 @@ export function GameModeRenderer({
       mode,
       location,
       guessResult,
-      roundId,
       mcShuffledOptions,
       mcCorrectIndex,
     );
@@ -151,7 +146,6 @@ function renderGuessingState(
   mapInputActions?: MapInputActions,
   mcInputState?: MultipleChoiceInputState,
   mcInputActions?: MultipleChoiceInputActions,
-  roundId?: string,
   mcShuffledOptions?: string[],
 ): React.ReactElement | null {
   switch (mode) {
@@ -199,8 +193,7 @@ function renderGuessingState(
           countdownEndsAt={countdownEndsAt}
           timeLimit={timeLimit}
           hasGuessed={hasGuessed}
-          roundId={roundId ?? ""}
-          mcShuffledOptions={mcShuffledOptions}
+          mcShuffledOptions={mcShuffledOptions ?? []}
           mcInputState={mcInputState}
           mcInputActions={mcInputActions}
         />
@@ -214,7 +207,6 @@ function renderRevealState(
   mode: GameMode,
   location: LocationData,
   guessResult: GuessResult | null,
-  roundId?: string,
   mcShuffledOptions?: string[],
   mcCorrectIndex?: number,
 ): React.ReactElement | null {
@@ -237,9 +229,8 @@ function renderRevealState(
         <MultipleChoiceReveal
           location={location}
           guessResult={guessResult}
-          roundId={roundId ?? ""}
-          mcShuffledOptions={mcShuffledOptions}
-          mcCorrectIndex={mcCorrectIndex}
+          mcShuffledOptions={mcShuffledOptions ?? []}
+          mcCorrectIndex={mcCorrectIndex ?? -1}
         />
       );
     default:
