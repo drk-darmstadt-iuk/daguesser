@@ -50,19 +50,42 @@ export function calculateDestination(
 }
 
 /**
- * German compass directions (8-point compass)
+ * German compass direction entry for 8-point compass.
  */
-const COMPASS_DIRECTIONS = [
-  { min: 337.5, max: 360, label: "N", full: "Nord" },
-  { min: 0, max: 22.5, label: "N", full: "Nord" },
-  { min: 22.5, max: 67.5, label: "NO", full: "Nordost" },
-  { min: 67.5, max: 112.5, label: "O", full: "Ost" },
-  { min: 112.5, max: 157.5, label: "SO", full: "Suedost" },
-  { min: 157.5, max: 202.5, label: "S", full: "Sued" },
-  { min: 202.5, max: 247.5, label: "SW", full: "Suedwest" },
-  { min: 247.5, max: 292.5, label: "W", full: "West" },
-  { min: 292.5, max: 337.5, label: "NW", full: "Nordwest" },
+export interface CompassDirection {
+  label: string;
+  full: string;
+}
+
+/**
+ * German compass directions (8-point compass) for display.
+ * Ordered clockwise starting from North.
+ */
+export const COMPASS_DIRECTIONS: readonly CompassDirection[] = [
+  { label: "N", full: "Nord" },
+  { label: "NO", full: "Nordost" },
+  { label: "O", full: "Ost" },
+  { label: "SO", full: "Suedost" },
+  { label: "S", full: "Sued" },
+  { label: "SW", full: "Suedwest" },
+  { label: "W", full: "West" },
+  { label: "NW", full: "Nordwest" },
 ] as const;
+
+/**
+ * Get the compass direction index for a bearing.
+ * Each direction covers 45 degrees (360 / 8).
+ *
+ * @param degrees - Bearing in degrees (0-360)
+ * @returns Index into COMPASS_DIRECTIONS (0-7)
+ */
+function getCompassIndex(degrees: number): number {
+  // Normalize to 0-360, then shift by 22.5 so that N is centered at 0
+  const normalized = ((degrees % 360) + 360) % 360;
+  // Add 22.5 to center each direction in its 45-degree arc
+  const shifted = (normalized + 22.5) % 360;
+  return Math.floor(shifted / 45);
+}
 
 /**
  * Format bearing as German compass direction.
@@ -71,17 +94,7 @@ const COMPASS_DIRECTIONS = [
  * @returns German compass abbreviation (N, NO, O, SO, S, SW, W, NW)
  */
 export function formatBearing(degrees: number): string {
-  // Normalize to 0-360
-  const normalized = ((degrees % 360) + 360) % 360;
-
-  for (const dir of COMPASS_DIRECTIONS) {
-    if (normalized >= dir.min && normalized < dir.max) {
-      return dir.label;
-    }
-  }
-
-  // Fallback (should not happen with valid input)
-  return "N";
+  return COMPASS_DIRECTIONS[getCompassIndex(degrees)].label;
 }
 
 /**
@@ -91,15 +104,7 @@ export function formatBearing(degrees: number): string {
  * @returns Full German direction name
  */
 export function formatBearingFull(degrees: number): string {
-  const normalized = ((degrees % 360) + 360) % 360;
-
-  for (const dir of COMPASS_DIRECTIONS) {
-    if (normalized >= dir.min && normalized < dir.max) {
-      return dir.full;
-    }
-  }
-
-  return "Nord";
+  return COMPASS_DIRECTIONS[getCompassIndex(degrees)].full;
 }
 
 /**

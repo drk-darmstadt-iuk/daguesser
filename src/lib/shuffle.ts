@@ -68,24 +68,3 @@ export function shuffleWithSeed<T>(array: T[], seed: string): T[] {
 
   return result;
 }
-
-/**
- * Get the original index of an item after shuffling.
- *
- * Useful for mapping shuffled index back to original position.
- *
- * @param shuffledIndex - Index in shuffled array
- * @param arrayLength - Length of the original array
- * @param seed - Same seed used for shuffling
- * @returns Original index before shuffling
- */
-export function getOriginalIndex(
-  shuffledIndex: number,
-  arrayLength: number,
-  seed: string,
-): number {
-  // Create index mapping
-  const indices = Array.from({ length: arrayLength }, (_, i) => i);
-  const shuffled = shuffleWithSeed(indices, seed);
-  return shuffled[shuffledIndex];
-}

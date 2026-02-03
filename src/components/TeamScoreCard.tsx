@@ -4,7 +4,19 @@ import { useEffect, useState } from "react";
 import { ScoreBreakdownInline } from "@/components/ScoreBreakdown";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDistance } from "@/lib/bearing";
 import { cn } from "@/lib/utils";
+
+type RankDisplayResult =
+  | { emoji: string; class: string }
+  | { text: string; class: string };
+
+function getRankDisplay(rank: number): RankDisplayResult {
+  if (rank === 1) return { emoji: "", class: "text-yellow-500" };
+  if (rank === 2) return { emoji: "", class: "text-gray-400" };
+  if (rank === 3) return { emoji: "", class: "text-amber-700" };
+  return { text: `${rank}.`, class: "text-muted-foreground" };
+}
 
 interface TeamScoreCardProps {
   teamName: string;
@@ -46,12 +58,7 @@ export function TeamScoreCard({
     }
   }, [score, animatedScore]);
 
-  const getRankDisplay = (rank: number) => {
-    if (rank === 1) return { emoji: "", class: "text-yellow-500" };
-    if (rank === 2) return { emoji: "", class: "text-gray-400" };
-    if (rank === 3) return { emoji: "", class: "text-amber-700" };
-    return { text: `${rank}.`, class: "text-muted-foreground" };
-  };
+  const rankDisplay = rank !== undefined ? getRankDisplay(rank) : null;
 
   return (
     <Card
@@ -63,16 +70,11 @@ export function TeamScoreCard({
       )}
     >
       {/* Rank badge */}
-      {rank !== undefined && (
+      {rankDisplay && (
         <div
-          className={cn(
-            "absolute top-2 right-2 text-2xl",
-            getRankDisplay(rank).class,
-          )}
+          className={cn("absolute top-2 right-2 text-2xl", rankDisplay.class)}
         >
-          {"emoji" in getRankDisplay(rank)
-            ? getRankDisplay(rank).emoji
-            : getRankDisplay(rank).text}
+          {"emoji" in rankDisplay ? rankDisplay.emoji : rankDisplay.text}
         </div>
       )}
 
@@ -125,9 +127,7 @@ export function TeamScoreCard({
                 <div className="flex items-center gap-1">
                   <span className="text-muted-foreground">Entfernung:</span>
                   <span className="font-mono text-secondary">
-                    {lastRoundDistance < 1000
-                      ? `${Math.round(lastRoundDistance)}m`
-                      : `${(lastRoundDistance / 1000).toFixed(1)}km`}
+                    {formatDistance(lastRoundDistance)}
                   </span>
                 </div>
               )}
@@ -228,9 +228,7 @@ export function RoundScoreResult({
       <div className="flex items-center gap-2 text-muted-foreground">
         <span>Entfernung:</span>
         <span className="font-mono text-foreground">
-          {distanceMeters < 1000
-            ? `${Math.round(distanceMeters)} m`
-            : `${(distanceMeters / 1000).toFixed(1)} km`}
+          {formatDistance(distanceMeters)}
         </span>
       </div>
     </div>

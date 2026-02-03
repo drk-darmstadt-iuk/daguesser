@@ -6,7 +6,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatBearing, formatDistance } from "@/lib/bearing";
+import {
+  COMPASS_DIRECTIONS,
+  formatBearing,
+  formatDistance,
+} from "@/lib/bearing";
 import { cn } from "@/lib/utils";
 
 interface DirectionDistanceDisplayProps {
@@ -146,26 +150,15 @@ export function DirectionDistanceCompact({
 /**
  * Compass legend showing all direction abbreviations.
  */
-function CompassLegend() {
-  const directions = [
-    { abbr: "N", full: "Nord" },
-    { abbr: "NO", full: "Nordost" },
-    { abbr: "O", full: "Ost" },
-    { abbr: "SO", full: "Suedost" },
-    { abbr: "S", full: "Sued" },
-    { abbr: "SW", full: "Suedwest" },
-    { abbr: "W", full: "West" },
-    { abbr: "NW", full: "Nordwest" },
-  ];
-
+function CompassLegend(): React.ReactElement {
   return (
     <div className="text-xs">
       <p className="font-semibold mb-2">Himmelsrichtungen:</p>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-        {directions.map((dir) => (
-          <div key={dir.abbr} className="flex gap-2">
+        {COMPASS_DIRECTIONS.map((dir) => (
+          <div key={dir.label} className="flex gap-2">
             <span className="font-mono font-bold text-secondary w-6">
-              {dir.abbr}
+              {dir.label}
             </span>
             <span className="text-muted-foreground">{dir.full}</span>
           </div>
