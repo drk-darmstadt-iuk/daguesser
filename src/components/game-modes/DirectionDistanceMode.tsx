@@ -1,6 +1,5 @@
 "use client";
 
-import type React from "react";
 import { useMemo } from "react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { DirectionDistanceDisplay } from "@/components/DirectionDistanceDisplay";

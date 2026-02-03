@@ -1,6 +1,5 @@
 "use client";
 
-import type React from "react";
 import { useEffect, useMemo } from "react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";

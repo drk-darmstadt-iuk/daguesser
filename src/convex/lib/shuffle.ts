@@ -70,3 +70,22 @@ export function shuffleWithSeed<T>(array: T[], seed: string): T[] {
 
   return result;
 }
+
+/**
+ * Build shuffled multiple choice options array.
+ *
+ * Combines the correct answer with wrong options and shuffles them
+ * deterministically using the round ID as seed.
+ *
+ * @param correctName - The correct location name
+ * @param wrongOptions - Array of 3 wrong option names
+ * @param roundId - Round ID used as seed for consistent shuffle
+ * @returns Shuffled array of 4 options
+ */
+export function buildShuffledMcOptions(
+  correctName: string,
+  wrongOptions: string[],
+  roundId: string,
+): string[] {
+  return shuffleWithSeed([correctName, ...wrongOptions], roundId);
+}
