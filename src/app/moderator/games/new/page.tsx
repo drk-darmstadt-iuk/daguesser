@@ -9,9 +9,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { latLngToUtm } from "@/lib/utm";
+import type { GameMode } from "@/types/game";
 import { api } from "../../../../convex/_generated/api";
 
-// Sample locations for Darmstadt
+// Game mode configuration for UI
+const GAME_MODE_CONFIG: Record<
+  GameMode,
+  { label: string; description: string }
+> = {
+  imageToUtm: {
+    label: "Bild → UTM",
+    description: "Bild zeigen, UTM-Koordinaten raten",
+  },
+  utmToLocation: {
+    label: "UTM → Karte",
+    description: "UTM-Koordinaten zeigen, Ort auf Karte finden",
+  },
+  directionDistance: {
+    label: "Richtung & Distanz",
+    description: "Startpunkt + Richtung/Distanz zeigen, Ziel finden",
+  },
+  multipleChoice: {
+    label: "Multiple Choice",
+    description: "Bild zeigen, aus 4 Optionen wählen",
+  },
+};
+
+// Sample locations for Darmstadt with data for all game modes
 const SAMPLE_LOCATIONS = [
   {
     name: "Luisenplatz",
@@ -21,6 +45,14 @@ const SAMPLE_LOCATIONS = [
     hint: "Zentrum von Darmstadt",
     difficulty: "easy" as const,
     category: "Landmark",
+    // Multiple Choice options (3 wrong answers)
+    mcOptions: ["Friedensplatz", "Marktplatz", "Karolinenplatz"],
+    // Direction & Distance: from Schloss Darmstadt
+    startPointName: "Schloss Darmstadt",
+    startPointLatitude: 49.8744,
+    startPointLongitude: 8.6547,
+    bearingDegrees: 220, // SW direction
+    distanceMeters: 300,
   },
   {
     name: "Mathildenhöhe",
@@ -30,6 +62,12 @@ const SAMPLE_LOCATIONS = [
     hint: "Jugendstil-Ensemble",
     difficulty: "medium" as const,
     category: "Landmark",
+    mcOptions: ["Rosenhöhe", "Prinz-Emil-Garten", "Herrngarten"],
+    startPointName: "Russische Kapelle",
+    startPointLatitude: 49.8765,
+    startPointLongitude: 8.6682,
+    bearingDegrees: 200,
+    distanceMeters: 120,
   },
   {
     name: "Schloss Darmstadt",
@@ -39,6 +77,12 @@ const SAMPLE_LOCATIONS = [
     hint: "Residenzschloss",
     difficulty: "easy" as const,
     category: "Historisch",
+    mcOptions: ["Jagdschloss Kranichstein", "Orangerie", "Prinz-Georg-Palais"],
+    startPointName: "Marktplatz",
+    startPointLatitude: 49.8735,
+    startPointLongitude: 8.6525,
+    bearingDegrees: 45, // NE direction
+    distanceMeters: 200,
   },
   {
     name: "Hauptbahnhof",
@@ -48,6 +92,12 @@ const SAMPLE_LOCATIONS = [
     hint: "Verkehrsknotenpunkt",
     difficulty: "easy" as const,
     category: "Infrastruktur",
+    mcOptions: ["Ostbahnhof", "Nordbahnhof", "TU Lichtwiese"],
+    startPointName: "Luisenplatz",
+    startPointLatitude: 49.8728,
+    startPointLongitude: 8.6512,
+    bearingDegrees: 270, // West
+    distanceMeters: 1700,
   },
   {
     name: "Großer Woog",
@@ -57,6 +107,12 @@ const SAMPLE_LOCATIONS = [
     hint: "Naturbadestelle",
     difficulty: "medium" as const,
     category: "Natur",
+    mcOptions: ["Steinbrücker Teich", "Backhausteich", "Oberwaldhaus"],
+    startPointName: "Jugendstilbad",
+    startPointLatitude: 49.8695,
+    startPointLongitude: 8.6655,
+    bearingDegrees: 150, // SE direction
+    distanceMeters: 200,
   },
 ];
 
@@ -92,10 +148,25 @@ function NewGameForm() {
       const locationsWithUtm = SAMPLE_LOCATIONS.map((loc) => {
         const utm = latLngToUtm(loc.latitude, loc.longitude);
         return {
-          ...loc,
+          name: loc.name,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
           utmZone: `${utm.zone}${utm.zoneLetter}`,
           utmEasting: utm.easting,
           utmNorthing: utm.northing,
+          imageUrls: loc.imageUrls,
+          hint: loc.hint,
+          difficulty: loc.difficulty,
+          category: loc.category,
+          // Direction & Distance mode fields
+          bearingDegrees: loc.bearingDegrees,
+          distanceMeters: loc.distanceMeters,
+          startPointName: loc.startPointName,
+          startPointLatitude: loc.startPointLatitude,
+          startPointLongitude: loc.startPointLongitude,
+          startPointImageUrls: undefined,
+          // Multiple Choice mode fields
+          mcOptions: loc.mcOptions,
         };
       });
 
@@ -103,7 +174,7 @@ function NewGameForm() {
       await importLocations({
         gameId,
         locations: locationsWithUtm,
-        modes: selectedModes as Array<"imageToUtm" | "utmToLocation">,
+        modes: selectedModes as GameMode[],
       });
 
       // Navigate to game control
@@ -154,6 +225,15 @@ function NewGameForm() {
           hint?: string;
           difficulty?: "easy" | "medium" | "hard";
           category?: string;
+          // Direction & Distance mode fields
+          bearingDegrees?: number;
+          distanceMeters?: number;
+          startPointName?: string;
+          startPointImageUrls?: string[];
+          startPointLatitude?: number;
+          startPointLongitude?: number;
+          // Multiple Choice mode fields
+          mcOptions?: string[];
         }) => {
           const utm = latLngToUtm(loc.latitude, loc.longitude);
           return {
@@ -167,6 +247,15 @@ function NewGameForm() {
             hint: loc.hint,
             difficulty: loc.difficulty ?? "medium",
             category: loc.category,
+            // Direction & Distance mode fields
+            bearingDegrees: loc.bearingDegrees,
+            distanceMeters: loc.distanceMeters,
+            startPointName: loc.startPointName,
+            startPointImageUrls: loc.startPointImageUrls,
+            startPointLatitude: loc.startPointLatitude,
+            startPointLongitude: loc.startPointLongitude,
+            // Multiple Choice mode fields
+            mcOptions: loc.mcOptions,
           };
         },
       );
@@ -240,40 +329,26 @@ function NewGameForm() {
             <div className="space-y-2">
               <Label>Spielmodi</Label>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant={
-                    selectedModes.includes("imageToUtm") ? "default" : "outline"
-                  }
-                  size="sm"
-                  onClick={() =>
-                    setSelectedModes((prev) =>
-                      prev.includes("imageToUtm")
-                        ? prev.filter((m) => m !== "imageToUtm")
-                        : [...prev, "imageToUtm"],
-                    )
-                  }
-                >
-                  Bild → UTM
-                </Button>
-                <Button
-                  type="button"
-                  variant={
-                    selectedModes.includes("utmToLocation")
-                      ? "default"
-                      : "outline"
-                  }
-                  size="sm"
-                  onClick={() =>
-                    setSelectedModes((prev) =>
-                      prev.includes("utmToLocation")
-                        ? prev.filter((m) => m !== "utmToLocation")
-                        : [...prev, "utmToLocation"],
-                    )
-                  }
-                >
-                  UTM → Karte
-                </Button>
+                {(Object.keys(GAME_MODE_CONFIG) as GameMode[]).map((mode) => (
+                  <Button
+                    key={mode}
+                    type="button"
+                    variant={
+                      selectedModes.includes(mode) ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() =>
+                      setSelectedModes((prev) =>
+                        prev.includes(mode)
+                          ? prev.filter((m) => m !== mode)
+                          : [...prev, mode],
+                      )
+                    }
+                    title={GAME_MODE_CONFIG[mode].description}
+                  >
+                    {GAME_MODE_CONFIG[mode].label}
+                  </Button>
+                ))}
               </div>
               <p className="text-xs text-muted-foreground">
                 Bei mehreren Modi wird für jeden Ort eine Runde pro Modus
@@ -327,13 +402,19 @@ function NewGameForm() {
       "name": "Ort Name",
       "latitude": 49.8728,
       "longitude": 8.6512,
-      "imageUrls": [],
+      "imageUrls": ["https://..."],
       "hint": "Hinweis",
       "difficulty": "easy",
-      "category": "Kategorie"
+      "category": "Kategorie",
+      "mcOptions": ["Falsch 1", "Falsch 2", "Falsch 3"],
+      "startPointName": "Startpunkt",
+      "startPointLatitude": 49.87,
+      "startPointLongitude": 8.65,
+      "bearingDegrees": 45,
+      "distanceMeters": 500
     }
   ],
-  "modes": ["imageToUtm", "utmToLocation"],
+  "modes": ["imageToUtm", "multipleChoice"],
   "defaultTimeLimit": 30
 }`}
                     value={jsonInput}

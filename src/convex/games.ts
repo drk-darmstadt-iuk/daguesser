@@ -83,6 +83,15 @@ export const importLocations = mutation({
         hint: v.optional(v.string()),
         difficulty: difficulty,
         category: v.optional(v.string()),
+        // Direction & Distance mode fields
+        bearingDegrees: v.optional(v.number()),
+        distanceMeters: v.optional(v.number()),
+        startPointName: v.optional(v.string()),
+        startPointImageUrls: v.optional(v.array(v.string())),
+        startPointLatitude: v.optional(v.number()),
+        startPointLongitude: v.optional(v.number()),
+        // Multiple Choice mode fields
+        mcOptions: v.optional(v.array(v.string())),
       }),
     ),
     modes: v.array(gameMode),
@@ -107,7 +116,6 @@ export const importLocations = mutation({
     }
 
     // Create locations and rounds
-    const locationIds: string[] = [];
     let roundNumber = 1;
 
     for (let i = 0; i < args.locations.length; i++) {
@@ -127,9 +135,16 @@ export const importLocations = mutation({
         difficulty: loc.difficulty,
         category: loc.category,
         orderIndex: i,
+        // Direction & Distance mode fields
+        bearingDegrees: loc.bearingDegrees,
+        distanceMeters: loc.distanceMeters,
+        startPointName: loc.startPointName,
+        startPointImageUrls: loc.startPointImageUrls,
+        startPointLatitude: loc.startPointLatitude,
+        startPointLongitude: loc.startPointLongitude,
+        // Multiple Choice mode fields
+        mcOptions: loc.mcOptions,
       });
-
-      locationIds.push(locationId);
 
       // Create rounds for each mode
       for (const mode of args.modes) {

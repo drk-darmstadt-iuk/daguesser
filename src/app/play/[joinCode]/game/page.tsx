@@ -37,11 +37,16 @@ export default function TeamGame({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Map mode state (for utmToLocation)
+  // Map mode state (for utmToLocation and directionDistance)
   const [guessedPosition, setGuessedPosition] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
+
+  // Multiple choice mode state
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(
+    null,
+  );
 
   const gameByCode = useQuery(api.games.getByJoinCode, {
     joinCode: joinCode.toUpperCase(),
@@ -88,6 +93,7 @@ export default function TeamGame({
     setNorthingInput("");
     setSubmitError(null);
     setGuessedPosition(null);
+    setSelectedOptionIndex(null);
   }, [currentRound?._id]);
 
   useEffect(() => {
@@ -99,6 +105,7 @@ export default function TeamGame({
   async function handleSubmit(): Promise<void> {
     if (!currentRound?._id) return;
 
+    // Validation based on mode
     if (currentRound.mode === "imageToUtm") {
       if (!isUtmInputComplete(eastingInput, northingInput)) {
         setSubmitError(
@@ -108,9 +115,19 @@ export default function TeamGame({
       }
     }
 
-    if (currentRound.mode === "utmToLocation") {
+    if (
+      currentRound.mode === "utmToLocation" ||
+      currentRound.mode === "directionDistance"
+    ) {
       if (!guessedPosition) {
         setSubmitError("Bitte eine Position auf der Karte auswaehlen");
+        return;
+      }
+    }
+
+    if (currentRound.mode === "multipleChoice") {
+      if (selectedOptionIndex === null) {
+        setSubmitError("Bitte eine Antwort auswaehlen");
         return;
       }
     }
@@ -133,11 +150,33 @@ export default function TeamGame({
           utmEasting: fullEasting,
           utmNorthing: fullNorthing,
         });
-      } else if (currentRound.mode === "utmToLocation" && guessedPosition) {
+      } else if (
+        (currentRound.mode === "utmToLocation" ||
+          currentRound.mode === "directionDistance") &&
+        guessedPosition
+      ) {
         await submitGuess({
           roundId: currentRound._id as Id<"rounds">,
           latitude: guessedPosition.lat,
           longitude: guessedPosition.lng,
+        });
+      } else if (
+        currentRound.mode === "multipleChoice" &&
+        selectedOptionIndex !== null
+      ) {
+        // Get the shuffled options to find the selected option name
+        const mcOptions = currentRound.location?.mcOptions ?? [];
+        const allOptions = [currentRound.location?.name ?? "", ...mcOptions];
+        // Note: The shuffle is done in the component with roundId as seed
+        // We need to import the shuffle function to get the same order
+        const { shuffleWithSeed } = await import("@/lib/shuffle");
+        const shuffledOptions = shuffleWithSeed(allOptions, currentRound._id);
+        const selectedOptionName = shuffledOptions[selectedOptionIndex];
+
+        await submitGuess({
+          roundId: currentRound._id as Id<"rounds">,
+          mcOptionIndex: selectedOptionIndex,
+          mcOptionName: selectedOptionName,
         });
       }
     } catch (err) {
@@ -214,6 +253,7 @@ export default function TeamGame({
               countdownEndsAt={currentRound.countdownEndsAt ?? null}
               hasGuessed={Boolean(myGuess)}
               guessResult={buildGuessResult(myGuessResult)}
+              roundId={currentRound._id}
               inputState={{
                 eastingInput,
                 northingInput,
@@ -232,6 +272,15 @@ export default function TeamGame({
               }}
               mapInputActions={{
                 setGuessedPosition,
+                handleSubmit,
+              }}
+              mcInputState={{
+                selectedOptionIndex,
+                isSubmitting,
+                submitError,
+              }}
+              mcInputActions={{
+                setSelectedOptionIndex,
                 handleSubmit,
               }}
             />
@@ -473,6 +522,15 @@ function buildLocationData(
         latitude?: number;
         longitude?: number;
         imageUrls?: string[];
+        // Direction & Distance mode fields
+        bearingDegrees?: number;
+        distanceMeters?: number;
+        startPointName?: string;
+        startPointImageUrls?: string[];
+        startPointLatitude?: number;
+        startPointLongitude?: number;
+        // Multiple Choice mode fields
+        mcOptions?: string[];
       }
     | null
     | undefined,
@@ -486,6 +544,15 @@ function buildLocationData(
     latitude: location?.latitude,
     longitude: location?.longitude,
     imageUrls: location?.imageUrls,
+    // Direction & Distance mode fields
+    bearingDegrees: location?.bearingDegrees,
+    distanceMeters: location?.distanceMeters,
+    startPointName: location?.startPointName,
+    startPointImageUrls: location?.startPointImageUrls,
+    startPointLatitude: location?.startPointLatitude,
+    startPointLongitude: location?.startPointLongitude,
+    // Multiple Choice mode fields
+    mcOptions: location?.mcOptions,
   };
 }
 
@@ -497,6 +564,9 @@ function buildGuessResult(
     guessedLongitude?: number;
     score?: number;
     distanceMeters?: number | null;
+    // Multiple Choice fields
+    guessedOptionIndex?: number;
+    guessedOptionName?: string;
   } | null,
 ): GuessResult | null {
   if (!guessData) return null;
@@ -507,5 +577,6 @@ function buildGuessResult(
     guessedLongitude: guessData.guessedLongitude,
     score: guessData.score,
     distanceMeters: guessData.distanceMeters,
+    guessedOptionName: guessData.guessedOptionName,
   };
 }

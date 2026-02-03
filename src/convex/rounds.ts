@@ -67,6 +67,24 @@ export const getCurrent = query({
                   utmNorthing: location.utmNorthing,
                 }
               : {}),
+            // Include direction & distance mode data
+            ...(round.mode === "directionDistance"
+              ? {
+                  bearingDegrees: location.bearingDegrees,
+                  distanceMeters: location.distanceMeters,
+                  startPointName: location.startPointName,
+                  startPointImageUrls: location.startPointImageUrls,
+                  startPointLatitude: location.startPointLatitude,
+                  startPointLongitude: location.startPointLongitude,
+                }
+              : {}),
+            // Include multiple choice mode data
+            ...(round.mode === "multipleChoice"
+              ? {
+                  imageUrls: location.imageUrls,
+                  mcOptions: location.mcOptions,
+                }
+              : {}),
             hint: location.hint,
             difficulty: location.difficulty,
           }

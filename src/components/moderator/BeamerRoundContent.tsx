@@ -1,11 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
 import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
+import {
+  DirectionDistanceCompact,
+  DirectionDistanceDisplay,
+} from "@/components/DirectionDistanceDisplay";
 import { LeaderboardBeamer } from "@/components/Leaderboard";
 import { LocationSolutionMap } from "@/components/LocationSolutionMap";
 import { RoundImage } from "@/components/RoundImage";
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { getCorrectPosition } from "@/lib/location";
+import { shuffleWithSeed } from "@/lib/shuffle";
+import { cn } from "@/lib/utils";
 import { extractLocationUtm } from "@/lib/utm-helpers";
 import { GuessProgress } from "./GuessProgress";
 import type {
@@ -21,6 +28,7 @@ interface RoundGuess {
   guessedLongitude?: number;
   guessedUtmEasting?: number;
   guessedUtmNorthing?: number;
+  guessedOptionName?: string;
   score: number;
   distanceMeters: number;
 }
@@ -36,6 +44,8 @@ interface BeamerRoundContentProps {
   allTeamsGuessed?: boolean;
   leaderboard: LeaderboardEntryData[];
   roundGuesses?: RoundGuess[];
+  /** Round ID for deterministic shuffle in MC mode */
+  roundId?: string;
 }
 
 export function BeamerRoundContent({
@@ -49,6 +59,7 @@ export function BeamerRoundContent({
   allTeamsGuessed,
   leaderboard,
   roundGuesses,
+  roundId,
 }: BeamerRoundContentProps): React.ReactElement | null {
   if (status === "pending") {
     return <BeamerPendingContent />;
@@ -85,6 +96,7 @@ export function BeamerRoundContent({
         location={location}
         leaderboard={leaderboard}
         roundGuesses={roundGuesses}
+        roundId={roundId}
       />
     );
   }
@@ -127,6 +139,32 @@ function BeamerShowingContent({
           size="xl"
           className="mx-auto"
         />
+      )}
+
+      {mode === "directionDistance" && (
+        <div className="flex flex-col items-center gap-6">
+          {location?.startPointImageUrls?.[0] && (
+            <RoundImage
+              src={location.startPointImageUrls[0]}
+              size="lg"
+              alt={location.startPointName ?? "Startpunkt"}
+            />
+          )}
+          <div className="text-center">
+            <p className="text-2xl text-muted-foreground mb-2">
+              Von: {location?.startPointName ?? "Startpunkt"}
+            </p>
+            <DirectionDistanceDisplay
+              bearingDegrees={location?.bearingDegrees ?? 0}
+              distanceMeters={location?.distanceMeters ?? 0}
+              size="lg"
+            />
+          </div>
+        </div>
+      )}
+
+      {mode === "multipleChoice" && location?.imageUrls?.[0] && (
+        <RoundImage src={location.imageUrls[0]} size="xl" alt="Ort" />
       )}
 
       <div className="mt-8">
@@ -180,6 +218,33 @@ function BeamerGuessingContent({
         </div>
       )}
 
+      {mode === "directionDistance" && (
+        <div className="mb-8 flex flex-col items-center gap-4">
+          {location?.startPointImageUrls?.[0] && (
+            <RoundImage
+              src={location.startPointImageUrls[0]}
+              size="sm"
+              alt={location.startPointName ?? "Startpunkt"}
+            />
+          )}
+          <div className="text-center">
+            <p className="text-lg text-muted-foreground mb-2">
+              Von: {location?.startPointName ?? "Startpunkt"}
+            </p>
+            <DirectionDistanceCompact
+              bearingDegrees={location?.bearingDegrees ?? 0}
+              distanceMeters={location?.distanceMeters ?? 0}
+            />
+          </div>
+        </div>
+      )}
+
+      {mode === "multipleChoice" && location?.imageUrls?.[0] && (
+        <div className="mb-8">
+          <RoundImage src={location.imageUrls[0]} size="md" alt="Ort" />
+        </div>
+      )}
+
       {countdownEndsAt && (
         <CountdownTimer
           endsAt={countdownEndsAt}
@@ -204,6 +269,7 @@ interface BeamerRevealContentProps {
   location: LocationData | undefined;
   leaderboard: LeaderboardEntryData[];
   roundGuesses?: RoundGuess[];
+  roundId?: string;
 }
 
 function BeamerRevealContent({
@@ -211,16 +277,27 @@ function BeamerRevealContent({
   location,
   leaderboard,
   roundGuesses,
+  roundId,
 }: BeamerRevealContentProps): React.ReactElement {
   const utm = extractLocationUtm(location);
 
-  // Get correct position for utmToLocation mode
+  // Get correct position for map-based modes
   const correctPosition =
-    mode === "utmToLocation" ? getCorrectPosition(location, utm) : null;
+    mode === "utmToLocation" || mode === "directionDistance"
+      ? getCorrectPosition(location, utm)
+      : null;
+
+  // Get start position for direction distance mode
+  const startPosition =
+    mode === "directionDistance" &&
+    location?.startPointLatitude != null &&
+    location?.startPointLongitude != null
+      ? { lat: location.startPointLatitude, lng: location.startPointLongitude }
+      : undefined;
 
   // Build team guesses for map
   const teamGuesses =
-    mode === "utmToLocation" && roundGuesses
+    (mode === "utmToLocation" || mode === "directionDistance") && roundGuesses
       ? roundGuesses.flatMap((g) => {
           if (g.guessedLatitude == null || g.guessedLongitude == null) {
             return [];
@@ -236,6 +313,17 @@ function BeamerRevealContent({
         })
       : [];
 
+  // Shuffled options for multiple choice reveal
+  const shuffledOptions = useMemo(() => {
+    if (mode !== "multipleChoice" || !location?.mcOptions || !roundId) {
+      return [];
+    }
+    const allOptions = [location.name, ...location.mcOptions];
+    return shuffleWithSeed(allOptions, roundId);
+  }, [mode, location?.name, location?.mcOptions, roundId]);
+
+  const correctIndex = shuffledOptions.indexOf(location?.name ?? "");
+
   return (
     <>
       <h2 className="text-4xl font-bold text-correct">Richtige Antwort</h2>
@@ -243,17 +331,43 @@ function BeamerRevealContent({
         {location?.name ?? "Unbekannt"}
       </h3>
 
-      {mode === "utmToLocation" && correctPosition ? (
+      {/* Map display for utmToLocation and directionDistance */}
+      {(mode === "utmToLocation" || mode === "directionDistance") &&
+      correctPosition ? (
         <div className="mt-8 w-full max-w-4xl mx-auto">
           <LocationSolutionMap
             correctPosition={correctPosition}
+            startPosition={startPosition}
             teamGuesses={teamGuesses}
             showDistanceLine={false}
             showUtmGrid
             className="h-[400px]"
           />
         </div>
+      ) : mode === "multipleChoice" ? (
+        // Multiple choice options display
+        <div className="mt-8 grid grid-cols-2 gap-4 max-w-3xl mx-auto">
+          {shuffledOptions.map((option, index) => {
+            const isCorrect = index === correctIndex;
+            return (
+              <div
+                key={option}
+                className={cn(
+                  "px-6 py-4 rounded-lg border-2 text-center font-semibold text-xl transition-colors",
+                  isCorrect
+                    ? "bg-correct/20 border-correct text-correct"
+                    : "bg-muted/30 border-muted text-muted-foreground",
+                )}
+              >
+                <span className="opacity-60 mr-2">{index + 1}.</span>
+                {option}
+                {isCorrect && <span className="ml-2">✓</span>}
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        // Default: UTM display for imageToUtm
         <UtmDisplay
           utmZone={utm.utmZone}
           easting={utm.utmEasting}
