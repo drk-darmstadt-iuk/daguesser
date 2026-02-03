@@ -15,7 +15,6 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { LeaderboardEntry } from "@/convex/leaderboard";
 import { getDistanceRating } from "@/lib/scoring";
-import { buildShuffledMcOptions } from "@/lib/shuffle";
 import {
   calculateFullUtm,
   DARMSTADT_DEFAULTS,
@@ -165,12 +164,11 @@ export default function TeamGame({
         currentRound.mode === "multipleChoice" &&
         selectedOptionIndex !== null
       ) {
-        const mcOptions = currentRound.location?.mcOptions ?? [];
-        const shuffledOptions = buildShuffledMcOptions(
-          currentRound.location?.name ?? "",
-          mcOptions,
-          currentRound._id,
-        );
+        // Use server-provided shuffle (server always provides this, even for old rounds via backfill)
+        const shuffledOptions = currentRound.mcShuffledOptions;
+        if (!shuffledOptions || shuffledOptions.length === 0) {
+          throw new Error("No options available");
+        }
         const selectedOptionName = shuffledOptions[selectedOptionIndex];
 
         await submitGuess({
@@ -254,6 +252,8 @@ export default function TeamGame({
               hasGuessed={Boolean(myGuess)}
               guessResult={buildGuessResult(myGuessResult)}
               roundId={currentRound._id}
+              mcShuffledOptions={currentRound.mcShuffledOptions}
+              mcCorrectIndex={currentRound.mcCorrectIndex}
               inputState={{
                 eastingInput,
                 northingInput,

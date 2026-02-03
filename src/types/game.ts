@@ -38,9 +38,10 @@ export type GameStatus = "lobby" | "playing" | "paused" | "finished";
 
 /**
  * Location data for a round. Contains the target location that players guess.
+ * Note: `name` is optional because it's hidden during showing/guessing for MC mode.
  */
 export interface LocationData {
-  name: string;
+  name?: string;
   utmZone?: string;
   utmEasting?: number;
   utmNorthing?: number;
@@ -142,6 +143,9 @@ export interface RoundData {
   totalTeams?: number;
   allTeamsGuessed?: boolean;
   location?: LocationData;
+  // Multiple Choice mode: server-computed shuffle
+  mcShuffledOptions?: string[];
+  mcCorrectIndex?: number;
 }
 
 /**

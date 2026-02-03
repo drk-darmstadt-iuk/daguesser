@@ -189,7 +189,7 @@ export function DirectionDistanceReveal({
 
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4">
-      <LocationRevealCard locationName={location.name} />
+      <LocationRevealCard locationName={location.name ?? "Unbekannter Ort"} />
 
       <LocationSolutionMap
         correctPosition={correctPosition}

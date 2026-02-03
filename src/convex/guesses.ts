@@ -168,13 +168,21 @@ export const submit = mutation({
         throw new Error("Invalid option index (must be 0-3)");
       }
 
-      // Server-side validation: rebuild shuffled options and verify index matches name
-      const shuffledOptions = buildShuffledMcOptions(
-        location.name,
-        location.mcOptions ?? [],
-        round._id,
-      );
+      // Use stored shuffle from round, with fallback for old rounds
+      let shuffledOptions = round.mcShuffledOptions;
+      let correctIndex = round.mcCorrectIndex;
 
+      if (!shuffledOptions || correctIndex === undefined) {
+        // Backfill for old rounds created before migration
+        shuffledOptions = buildShuffledMcOptions(
+          location.name,
+          location.mcOptions ?? [],
+          round._id,
+        );
+        correctIndex = shuffledOptions.indexOf(location.name);
+      }
+
+      // Validate that option index matches the option name
       if (shuffledOptions[args.mcOptionIndex] !== args.mcOptionName) {
         throw new Error("Invalid submission: option index does not match name");
       }
@@ -182,8 +190,8 @@ export const submit = mutation({
       guessedOptionIndex = args.mcOptionIndex;
       guessedOptionName = args.mcOptionName;
 
-      // Check if correct
-      const isCorrect = args.mcOptionName === location.name;
+      // Check if correct using stored index
+      const isCorrect = args.mcOptionIndex === correctIndex;
 
       // For MC mode: correct = base score + time bonus, wrong = 0
       distanceMeters = 0; // No distance concept in MC mode

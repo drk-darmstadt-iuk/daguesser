@@ -118,6 +118,9 @@ const schema = defineSchema(
       completedAt: v.optional(v.number()),
       // Flag to prevent double-applying scores on re-reveal
       scoresApplied: v.optional(v.boolean()),
+      // Multiple Choice mode: shuffled options computed on round start
+      mcShuffledOptions: v.optional(v.array(v.string())), // 4 shuffled options
+      mcCorrectIndex: v.optional(v.number()), // Index 0-3 of correct answer
     })
       .index("by_game", ["gameId"])
       .index("by_game_and_number", ["gameId", "roundNumber"]),

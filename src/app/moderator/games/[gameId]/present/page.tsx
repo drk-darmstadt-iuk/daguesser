@@ -63,6 +63,8 @@ function BeamerView({ gameId }: { gameId: Id<"games"> }): React.ReactElement {
                 leaderboard={leaderboard ?? []}
                 roundGuesses={roundGuesses ?? []}
                 roundId={currentRound._id}
+                mcShuffledOptions={currentRound.mcShuffledOptions}
+                mcCorrectIndex={currentRound.mcCorrectIndex}
               />
             </div>
           </div>

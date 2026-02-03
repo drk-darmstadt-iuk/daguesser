@@ -46,6 +46,10 @@ interface BeamerRoundContentProps {
   roundGuesses?: RoundGuess[];
   /** Round ID for deterministic shuffle in MC mode */
   roundId?: string;
+  /** Server-provided shuffled options for MC mode */
+  mcShuffledOptions?: string[];
+  /** Server-provided correct index for MC mode (only during reveal) */
+  mcCorrectIndex?: number;
 }
 
 export function BeamerRoundContent({
@@ -60,6 +64,8 @@ export function BeamerRoundContent({
   leaderboard,
   roundGuesses,
   roundId,
+  mcShuffledOptions,
+  mcCorrectIndex,
 }: BeamerRoundContentProps): React.ReactElement | null {
   switch (status) {
     case "pending":
@@ -96,6 +102,8 @@ export function BeamerRoundContent({
           leaderboard={leaderboard}
           roundGuesses={roundGuesses}
           roundId={roundId}
+          mcShuffledOptions={mcShuffledOptions}
+          mcCorrectIndex={mcCorrectIndex}
         />
       );
 
@@ -270,6 +278,8 @@ interface BeamerRevealContentProps {
   leaderboard: LeaderboardEntryData[];
   roundGuesses?: RoundGuess[];
   roundId?: string;
+  mcShuffledOptions?: string[];
+  mcCorrectIndex?: number;
 }
 
 function BeamerRevealContent({
@@ -278,6 +288,8 @@ function BeamerRevealContent({
   leaderboard,
   roundGuesses,
   roundId,
+  mcShuffledOptions,
+  mcCorrectIndex,
 }: BeamerRevealContentProps): React.ReactElement {
   const utm = extractLocationUtm(location);
 
@@ -315,17 +327,28 @@ function BeamerRevealContent({
           }))
       : [];
 
-  // Shuffled options for multiple choice reveal
-  const mcOptions = location?.mcOptions;
+  // Use server-provided shuffle if available, otherwise fall back to client-side computation
   const locationName = location?.name ?? "";
   const shuffledOptions = useMemo(() => {
-    if (mode !== "multipleChoice" || !mcOptions || !roundId) {
+    if (mode !== "multipleChoice") {
+      return [];
+    }
+    if (mcShuffledOptions && mcShuffledOptions.length > 0) {
+      return mcShuffledOptions;
+    }
+    // Fallback: compute client-side (only for old rounds)
+    const mcOptions = location?.mcOptions;
+    if (!mcOptions || !roundId) {
       return [];
     }
     return buildShuffledMcOptions(locationName, mcOptions, roundId);
-  }, [mode, locationName, mcOptions, roundId]);
+  }, [mode, mcShuffledOptions, locationName, location?.mcOptions, roundId]);
 
-  const correctIndex = shuffledOptions.indexOf(locationName);
+  // Use server-provided correct index if available, otherwise find it
+  const correctIndex =
+    mcCorrectIndex !== undefined
+      ? mcCorrectIndex
+      : shuffledOptions.indexOf(locationName);
 
   return (
     <>

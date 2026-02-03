@@ -224,11 +224,13 @@ interface CurrentRoundData {
   guessCount?: number;
   totalTeams?: number;
   location?: {
-    name: string;
+    name?: string; // Optional for MC mode during showing/guessing
     utmZone?: string;
     utmEasting?: number;
     utmNorthing?: number;
   } | null;
+  mcShuffledOptions?: string[];
+  mcCorrectIndex?: number;
 }
 
 interface PlayingControlsProps {

@@ -31,15 +31,21 @@ interface MultipleChoiceGuessingProps
     GameModeGuessingProps,
     "inputState" | "inputActions" | "mapInputState" | "mapInputActions"
   > {
-  /** Round ID for deterministic shuffle */
+  /** Round ID for deterministic shuffle (used as fallback seed) */
   roundId: string;
+  /** Server-provided shuffled options (preferred) */
+  mcShuffledOptions?: string[];
   mcInputState?: MultipleChoiceInputState;
   mcInputActions?: MultipleChoiceInputActions;
 }
 
 interface MultipleChoiceRevealProps extends GameModeRevealProps {
-  /** Round ID for deterministic shuffle */
+  /** Round ID for deterministic shuffle (used as fallback seed) */
   roundId: string;
+  /** Server-provided shuffled options (preferred) */
+  mcShuffledOptions?: string[];
+  /** Server-provided correct answer index (only available during reveal) */
+  mcCorrectIndex?: number;
 }
 
 /**
@@ -72,18 +78,23 @@ export function MultipleChoiceGuessing({
   timeLimit,
   hasGuessed,
   roundId,
+  mcShuffledOptions,
   mcInputState,
   mcInputActions,
 }: MultipleChoiceGuessingProps): React.ReactElement {
   const imageUrl = location.imageUrls?.[0];
-  const correctName = location.name;
-  const wrongOptions = location.mcOptions ?? [];
 
-  // Build shuffled options using roundId as seed for consistency
-  const shuffledOptions = useMemo(
-    () => buildShuffledMcOptions(correctName, wrongOptions, roundId),
-    [correctName, wrongOptions, roundId],
-  );
+  // Use server-provided shuffle if available, otherwise fall back to client-side computation
+  // (backward compat for old rounds that don't have stored shuffle)
+  const shuffledOptions = useMemo(() => {
+    if (mcShuffledOptions && mcShuffledOptions.length > 0) {
+      return mcShuffledOptions;
+    }
+    // Fallback: compute client-side (only for old rounds)
+    const correctName = location.name ?? "";
+    const wrongOptions = location.mcOptions ?? [];
+    return buildShuffledMcOptions(correctName, wrongOptions, roundId);
+  }, [mcShuffledOptions, location.name, location.mcOptions, roundId]);
 
   // Note: mcInputState and mcInputActions are always provided by GameModeRenderer
   const selectedIndex = mcInputState?.selectedOptionIndex ?? null;
@@ -224,19 +235,27 @@ export function MultipleChoiceReveal({
   location,
   guessResult,
   roundId,
+  mcShuffledOptions,
+  mcCorrectIndex,
 }: MultipleChoiceRevealProps): React.ReactElement {
   const imageUrl = location.imageUrls?.[0];
-  const correctName = location.name;
-  const wrongOptions = location.mcOptions ?? [];
+  const correctName = location.name ?? "";
 
-  // Rebuild shuffled options to show which was selected
-  const shuffledOptions = useMemo(
-    () => buildShuffledMcOptions(correctName, wrongOptions, roundId),
-    [correctName, wrongOptions, roundId],
-  );
+  // Use server-provided shuffle if available, otherwise fall back to client-side computation
+  const shuffledOptions = useMemo(() => {
+    if (mcShuffledOptions && mcShuffledOptions.length > 0) {
+      return mcShuffledOptions;
+    }
+    // Fallback: compute client-side (only for old rounds)
+    const wrongOptions = location.mcOptions ?? [];
+    return buildShuffledMcOptions(correctName, wrongOptions, roundId);
+  }, [mcShuffledOptions, correctName, location.mcOptions, roundId]);
 
-  // Find the correct option index in shuffled array
-  const correctIndex = shuffledOptions.indexOf(correctName);
+  // Use server-provided correct index if available, otherwise find it
+  const correctIndex =
+    mcCorrectIndex !== undefined
+      ? mcCorrectIndex
+      : shuffledOptions.indexOf(correctName);
 
   // Get the user's selection
   const guessedOptionName = guessResult?.guessedOptionName;
@@ -250,7 +269,7 @@ export function MultipleChoiceReveal({
     <div className="w-full max-w-2xl flex flex-col gap-4">
       {imageUrl && <RoundImage src={imageUrl} size="md" withCard />}
 
-      <LocationRevealCard locationName={location.name}>
+      <LocationRevealCard locationName={location.name ?? "Unbekannter Ort"}>
         {guessedOptionName && (
           <div className="mt-4 text-center">
             {isCorrect ? (

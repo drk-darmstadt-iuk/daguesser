@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { buildShuffledMcOptions } from "./lib/shuffle";
 
 /**
  * Get the current round for a game
@@ -39,14 +40,35 @@ export const getCurrent = query({
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
+    // Check if in reveal phase (correct answer can be shown)
+    const isRevealPhase =
+      round.status === "reveal" || round.status === "completed";
+
+    // For MC mode: compute backfill for old rounds that don't have stored shuffle
+    let mcShuffledOptions = round.mcShuffledOptions;
+    let mcCorrectIndex = round.mcCorrectIndex;
+
+    if (round.mode === "multipleChoice" && !mcShuffledOptions && location) {
+      mcShuffledOptions = buildShuffledMcOptions(
+        location.name,
+        location.mcOptions ?? [],
+        round._id,
+      );
+      mcCorrectIndex = mcShuffledOptions.indexOf(location.name);
+    }
+
     return {
       ...round,
       location: location
         ? {
             _id: location._id,
-            name: location.name,
+            // Hide correct answer for MC mode until reveal
+            name:
+              round.mode === "multipleChoice" && !isRevealPhase
+                ? undefined
+                : location.name,
             // Only include full coordinates during reveal
-            ...(round.status === "reveal" || round.status === "completed"
+            ...(isRevealPhase
               ? {
                   latitude: location.latitude,
                   longitude: location.longitude,
@@ -78,17 +100,20 @@ export const getCurrent = query({
                   startPointLongitude: location.startPointLongitude,
                 }
               : {}),
-            // Include multiple choice mode data
+            // For multiple choice mode: only include imageUrls, NOT mcOptions (to prevent cheating)
             ...(round.mode === "multipleChoice"
-              ? {
-                  imageUrls: location.imageUrls,
-                  mcOptions: location.mcOptions,
-                }
+              ? { imageUrls: location.imageUrls }
               : {}),
             hint: location.hint,
             difficulty: location.difficulty,
           }
         : null,
+      // Include MC shuffle data at round level
+      ...(round.mode === "multipleChoice" && {
+        mcShuffledOptions,
+        // Only reveal correct index during reveal phase
+        mcCorrectIndex: isRevealPhase ? mcCorrectIndex : undefined,
+      }),
       guessCount: guesses.length,
       totalTeams: teams.length,
       allTeamsGuessed: guesses.length >= teams.length,
@@ -163,10 +188,32 @@ export const start = mutation({
       throw new Error("Round already started");
     }
 
-    await ctx.db.patch(round._id, {
-      status: "showing",
-      startedAt: Date.now(),
-    });
+    // For multiple choice mode, compute and store the shuffled options
+    if (round.mode === "multipleChoice") {
+      const location = await ctx.db.get(round.locationId);
+      if (!location) {
+        throw new Error("Location not found");
+      }
+
+      const mcShuffledOptions = buildShuffledMcOptions(
+        location.name,
+        location.mcOptions ?? [],
+        round._id,
+      );
+      const mcCorrectIndex = mcShuffledOptions.indexOf(location.name);
+
+      await ctx.db.patch(round._id, {
+        status: "showing",
+        startedAt: Date.now(),
+        mcShuffledOptions,
+        mcCorrectIndex,
+      });
+    } else {
+      await ctx.db.patch(round._id, {
+        status: "showing",
+        startedAt: Date.now(),
+      });
+    }
 
     return { roundId: round._id };
   },
