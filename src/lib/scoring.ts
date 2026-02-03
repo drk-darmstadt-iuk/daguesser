@@ -89,7 +89,7 @@ export function calculateRanks(
 /**
  * Get ordinal suffix for a rank number (German)
  */
-export function getOrdinalSuffix(rank: number): string {
+export function getOrdinalSuffix(_rank: number): string {
   // In German, we just use a period after the number
   return ".";
 }

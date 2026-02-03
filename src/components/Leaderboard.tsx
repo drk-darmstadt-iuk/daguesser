@@ -89,7 +89,7 @@ export function Leaderboard({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {displayEntries.map((entry, index) => {
+          {displayEntries.map((entry, _index) => {
             const rankDisplay = getRankDisplay(entry.rank);
             const isHighlighted = entry.teamId === highlightTeamId;
             const lastRound = entry.roundScores?.[entry.roundScores.length - 1];

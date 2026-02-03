@@ -123,7 +123,16 @@ export function UtmGridOverlay({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, map]);
+  }, [
+    isLoaded,
+    map,
+    labelsLayerId,
+    lineColor,
+    lineOpacity,
+    linesLayerId,
+    showLabels,
+    sourceId,
+  ]);
 
   // Update style properties when props change
   useEffect(() => {
