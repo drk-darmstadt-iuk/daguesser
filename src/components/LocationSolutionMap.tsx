@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { CrosshairMarkerIcon } from "@/components/MapPlanZeiger";
 import { UtmGridOverlay } from "@/components/UtmGridOverlay";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +8,10 @@ import {
   Map,
   MapControls,
   MapMarker,
-  type MapRef,
   MapRoute,
   MarkerContent,
   MarkerLabel,
+  useMap,
 } from "@/components/ui/map";
 import { formatDistanceShort, getDistanceRating } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
@@ -57,74 +57,6 @@ export function LocationSolutionMap({
   showUtmGrid = true,
   className,
 }: LocationSolutionMapProps) {
-  const mapRef = useRef<MapRef | null>(null);
-  const [isMapReady, setIsMapReady] = useState(false);
-
-  // Calculate bounds to fit all markers
-  const fitBounds = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const positions: Position[] = [correctPosition];
-
-    if (guessedPosition) {
-      positions.push(guessedPosition);
-    }
-
-    if (teamGuesses) {
-      positions.push(...teamGuesses.map((g) => g.position));
-    }
-
-    if (positions.length === 1) {
-      // Single position - just center on it
-      map.flyTo({
-        center: [positions[0].lng, positions[0].lat],
-        zoom: 16,
-        duration: 1000,
-      });
-      return;
-    }
-
-    // Calculate bounds
-    let minLng = Infinity;
-    let maxLng = -Infinity;
-    let minLat = Infinity;
-    let maxLat = -Infinity;
-
-    for (const pos of positions) {
-      minLng = Math.min(minLng, pos.lng);
-      maxLng = Math.max(maxLng, pos.lng);
-      minLat = Math.min(minLat, pos.lat);
-      maxLat = Math.max(maxLat, pos.lat);
-    }
-
-    // Add some padding
-    const lngPadding = (maxLng - minLng) * 0.2 || 0.001;
-    const latPadding = (maxLat - minLat) * 0.2 || 0.001;
-
-    map.fitBounds(
-      [
-        [minLng - lngPadding, minLat - latPadding],
-        [maxLng + lngPadding, maxLat + latPadding],
-      ] as [[number, number], [number, number]],
-      { padding: 50, duration: 1000 },
-    );
-  }, [correctPosition, guessedPosition, teamGuesses]);
-
-  // Fit bounds when map loads or data changes
-  useEffect(() => {
-    if (isMapReady) {
-      // Delay to allow markers to render
-      const timeout = setTimeout(fitBounds, 100);
-      return () => clearTimeout(timeout);
-    }
-  }, [isMapReady, fitBounds]);
-
-  const handleMapLoad = useCallback((map: MapRef) => {
-    mapRef.current = map;
-    map.on("load", () => setIsMapReady(true));
-  }, []);
-
   // Build route coordinates for distance line
   const distanceLineCoordinates: [number, number][] =
     showDistanceLine && guessedPosition
@@ -142,12 +74,17 @@ export function LocationSolutionMap({
       )}
     >
       <Map
-        ref={handleMapLoad}
         center={[correctPosition.lng, correctPosition.lat]}
         zoom={15}
         minZoom={10}
         maxZoom={18}
       >
+        {/* Fit bounds to all markers on load */}
+        <MapBoundsFitter
+          correctPosition={correctPosition}
+          guessedPosition={guessedPosition}
+          teamGuesses={teamGuesses}
+        />
         {showUtmGrid && <UtmGridOverlay lineOpacity={0.2} />}
         <MapControls position="bottom-right" showZoom />
 
@@ -215,6 +152,77 @@ export function LocationSolutionMap({
       </Map>
     </div>
   );
+}
+
+/**
+ * Internal component to fit map bounds to all markers
+ */
+function MapBoundsFitter({
+  correctPosition,
+  guessedPosition,
+  teamGuesses,
+}: {
+  correctPosition: Position;
+  guessedPosition?: Position | null;
+  teamGuesses?: TeamGuess[];
+}) {
+  const { map, isLoaded } = useMap();
+
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+
+    // Delay to allow markers to render
+    const timeout = setTimeout(() => {
+      const positions: Position[] = [correctPosition];
+
+      if (guessedPosition) {
+        positions.push(guessedPosition);
+      }
+
+      if (teamGuesses) {
+        positions.push(...teamGuesses.map((g) => g.position));
+      }
+
+      if (positions.length === 1) {
+        // Single position - just center on it
+        map.flyTo({
+          center: [positions[0].lng, positions[0].lat],
+          zoom: 16,
+          duration: 1000,
+        });
+        return;
+      }
+
+      // Calculate bounds
+      let minLng = Number.POSITIVE_INFINITY;
+      let maxLng = Number.NEGATIVE_INFINITY;
+      let minLat = Number.POSITIVE_INFINITY;
+      let maxLat = Number.NEGATIVE_INFINITY;
+
+      for (const pos of positions) {
+        minLng = Math.min(minLng, pos.lng);
+        maxLng = Math.max(maxLng, pos.lng);
+        minLat = Math.min(minLat, pos.lat);
+        maxLat = Math.max(maxLat, pos.lat);
+      }
+
+      // Add some padding
+      const lngPadding = (maxLng - minLng) * 0.2 || 0.001;
+      const latPadding = (maxLat - minLat) * 0.2 || 0.001;
+
+      map.fitBounds(
+        [
+          [minLng - lngPadding, minLat - latPadding],
+          [maxLng + lngPadding, maxLat + latPadding],
+        ] as [[number, number], [number, number]],
+        { padding: 50, duration: 1000 },
+      );
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [isLoaded, map, correctPosition, guessedPosition, teamGuesses]);
+
+  return null;
 }
 
 /**
