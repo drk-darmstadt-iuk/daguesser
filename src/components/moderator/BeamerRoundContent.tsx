@@ -314,15 +314,16 @@ function BeamerRevealContent({
       : [];
 
   // Shuffled options for multiple choice reveal
+  const mcOptions = location?.mcOptions;
+  const locationName = location?.name ?? "";
   const shuffledOptions = useMemo(() => {
-    if (mode !== "multipleChoice" || !location?.mcOptions || !roundId) {
+    if (mode !== "multipleChoice" || !mcOptions || !roundId) {
       return [];
     }
-    const allOptions = [location.name, ...location.mcOptions];
-    return shuffleWithSeed(allOptions, roundId);
-  }, [mode, location?.name, location?.mcOptions, roundId]);
+    return shuffleWithSeed([locationName, ...mcOptions], roundId);
+  }, [mode, locationName, mcOptions, roundId]);
 
-  const correctIndex = shuffledOptions.indexOf(location?.name ?? "");
+  const correctIndex = shuffledOptions.indexOf(locationName);
 
   return (
     <>

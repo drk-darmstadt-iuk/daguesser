@@ -116,6 +116,50 @@ const SAMPLE_LOCATIONS = [
   },
 ];
 
+/** Input location data that can come from sample data or JSON import */
+interface LocationInput {
+  name: string;
+  latitude: number;
+  longitude: number;
+  imageUrls?: string[];
+  hint?: string;
+  difficulty?: "easy" | "medium" | "hard";
+  category?: string;
+  bearingDegrees?: number;
+  distanceMeters?: number;
+  startPointName?: string;
+  startPointImageUrls?: string[];
+  startPointLatitude?: number;
+  startPointLongitude?: number;
+  mcOptions?: string[];
+}
+
+/**
+ * Transform location input to include UTM coordinates for import.
+ */
+function transformLocationWithUtm(loc: LocationInput) {
+  const utm = latLngToUtm(loc.latitude, loc.longitude);
+  return {
+    name: loc.name,
+    latitude: loc.latitude,
+    longitude: loc.longitude,
+    utmZone: `${utm.zone}${utm.zoneLetter}`,
+    utmEasting: utm.easting,
+    utmNorthing: utm.northing,
+    imageUrls: loc.imageUrls ?? [],
+    hint: loc.hint,
+    difficulty: loc.difficulty ?? "medium",
+    category: loc.category,
+    bearingDegrees: loc.bearingDegrees,
+    distanceMeters: loc.distanceMeters,
+    startPointName: loc.startPointName,
+    startPointImageUrls: loc.startPointImageUrls,
+    startPointLatitude: loc.startPointLatitude,
+    startPointLongitude: loc.startPointLongitude,
+    mcOptions: loc.mcOptions,
+  };
+}
+
 function NewGameForm() {
   const router = useRouter();
   const [gameName, setGameName] = useState("");
@@ -138,46 +182,19 @@ function NewGameForm() {
     setError(null);
 
     try {
-      // Create game
       const { gameId } = await createGame({
         name: gameName.trim(),
         defaultTimeLimit: Number.parseInt(timeLimit, 10),
       });
 
-      // Convert locations to include UTM coordinates
-      const locationsWithUtm = SAMPLE_LOCATIONS.map((loc) => {
-        const utm = latLngToUtm(loc.latitude, loc.longitude);
-        return {
-          name: loc.name,
-          latitude: loc.latitude,
-          longitude: loc.longitude,
-          utmZone: `${utm.zone}${utm.zoneLetter}`,
-          utmEasting: utm.easting,
-          utmNorthing: utm.northing,
-          imageUrls: loc.imageUrls,
-          hint: loc.hint,
-          difficulty: loc.difficulty,
-          category: loc.category,
-          // Direction & Distance mode fields
-          bearingDegrees: loc.bearingDegrees,
-          distanceMeters: loc.distanceMeters,
-          startPointName: loc.startPointName,
-          startPointLatitude: loc.startPointLatitude,
-          startPointLongitude: loc.startPointLongitude,
-          startPointImageUrls: undefined,
-          // Multiple Choice mode fields
-          mcOptions: loc.mcOptions,
-        };
-      });
+      const locationsWithUtm = SAMPLE_LOCATIONS.map(transformLocationWithUtm);
 
-      // Import locations
       await importLocations({
         gameId,
         locations: locationsWithUtm,
         modes: selectedModes as GameMode[],
       });
 
-      // Navigate to game control
       router.push(`/moderator/games/${gameId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Fehler beim Erstellen");
@@ -201,73 +218,28 @@ function NewGameForm() {
     setError(null);
 
     try {
-      // Parse JSON
       const data = JSON.parse(jsonInput);
 
       if (!Array.isArray(data.locations)) {
         throw new Error("JSON muss ein 'locations' Array enthalten");
       }
 
-      // Create game
       const { gameId } = await createGame({
         name: gameName.trim(),
         defaultTimeLimit:
           data.defaultTimeLimit ?? Number.parseInt(timeLimit, 10),
       });
 
-      // Convert locations to include UTM coordinates
-      const locationsWithUtm = data.locations.map(
-        (loc: {
-          name: string;
-          latitude: number;
-          longitude: number;
-          imageUrls?: string[];
-          hint?: string;
-          difficulty?: "easy" | "medium" | "hard";
-          category?: string;
-          // Direction & Distance mode fields
-          bearingDegrees?: number;
-          distanceMeters?: number;
-          startPointName?: string;
-          startPointImageUrls?: string[];
-          startPointLatitude?: number;
-          startPointLongitude?: number;
-          // Multiple Choice mode fields
-          mcOptions?: string[];
-        }) => {
-          const utm = latLngToUtm(loc.latitude, loc.longitude);
-          return {
-            name: loc.name,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-            utmZone: `${utm.zone}${utm.zoneLetter}`,
-            utmEasting: utm.easting,
-            utmNorthing: utm.northing,
-            imageUrls: loc.imageUrls ?? [],
-            hint: loc.hint,
-            difficulty: loc.difficulty ?? "medium",
-            category: loc.category,
-            // Direction & Distance mode fields
-            bearingDegrees: loc.bearingDegrees,
-            distanceMeters: loc.distanceMeters,
-            startPointName: loc.startPointName,
-            startPointImageUrls: loc.startPointImageUrls,
-            startPointLatitude: loc.startPointLatitude,
-            startPointLongitude: loc.startPointLongitude,
-            // Multiple Choice mode fields
-            mcOptions: loc.mcOptions,
-          };
-        },
+      const locationsWithUtm = (data.locations as LocationInput[]).map(
+        transformLocationWithUtm,
       );
 
-      // Import locations
       await importLocations({
         gameId,
         locations: locationsWithUtm,
         modes: data.modes ?? selectedModes,
       });
 
-      // Navigate to game control
       router.push(`/moderator/games/${gameId}`);
     } catch (err) {
       if (err instanceof SyntaxError) {

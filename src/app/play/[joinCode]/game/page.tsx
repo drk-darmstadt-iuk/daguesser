@@ -15,6 +15,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { LeaderboardEntry } from "@/convex/leaderboard";
 import { getDistanceRating } from "@/lib/scoring";
+import { shuffleWithSeed } from "@/lib/shuffle";
 import {
   calculateFullUtm,
   DARMSTADT_DEFAULTS,
@@ -164,12 +165,8 @@ export default function TeamGame({
         currentRound.mode === "multipleChoice" &&
         selectedOptionIndex !== null
       ) {
-        // Get the shuffled options to find the selected option name
         const mcOptions = currentRound.location?.mcOptions ?? [];
         const allOptions = [currentRound.location?.name ?? "", ...mcOptions];
-        // Note: The shuffle is done in the component with roundId as seed
-        // We need to import the shuffle function to get the same order
-        const { shuffleWithSeed } = await import("@/lib/shuffle");
         const shuffledOptions = shuffleWithSeed(allOptions, currentRound._id);
         const selectedOptionName = shuffledOptions[selectedOptionIndex];
 
@@ -513,27 +510,7 @@ function NoAnswerCard(): React.ReactElement {
 }
 
 function buildLocationData(
-  location:
-    | {
-        name: string;
-        utmZone?: string;
-        utmEasting?: number;
-        utmNorthing?: number;
-        latitude?: number;
-        longitude?: number;
-        imageUrls?: string[];
-        // Direction & Distance mode fields
-        bearingDegrees?: number;
-        distanceMeters?: number;
-        startPointName?: string;
-        startPointImageUrls?: string[];
-        startPointLatitude?: number;
-        startPointLongitude?: number;
-        // Multiple Choice mode fields
-        mcOptions?: string[];
-      }
-    | null
-    | undefined,
+  location: Partial<LocationData> | null | undefined,
 ): LocationData {
   const utmData = extractLocationUtm(location);
   return {
