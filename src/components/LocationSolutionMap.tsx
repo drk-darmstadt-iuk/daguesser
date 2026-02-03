@@ -92,7 +92,7 @@ export function LocationSolutionMap({
         {distanceLineCoordinates.length === 2 && (
           <MapRoute
             coordinates={distanceLineCoordinates}
-            color="var(--destructive)"
+            color="#E31E24"
             width={2}
             opacity={0.8}
             dashArray={[8, 4]}
