@@ -78,9 +78,6 @@ export function MultipleChoiceGuessing({
 }: MultipleChoiceGuessingProps): React.ReactElement {
   const imageUrl = location.imageUrls?.[0];
 
-  // Use server-provided shuffled options (server always provides this)
-  const shuffledOptions = mcShuffledOptions;
-
   // Note: mcInputState and mcInputActions are always provided by GameModeRenderer
   const selectedIndex = mcInputState?.selectedOptionIndex ?? null;
   const isSubmitting = mcInputState?.isSubmitting ?? false;
@@ -92,19 +89,19 @@ export function MultipleChoiceGuessing({
   useEffect(() => {
     if (hasGuessed || isSubmitting) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    function handleKeyDown(e: KeyboardEvent): void {
       const num = Number.parseInt(e.key, 10);
-      if (num >= 1 && num <= 4 && num <= shuffledOptions.length) {
+      if (num >= 1 && num <= 4 && num <= mcShuffledOptions.length) {
         setSelectedIndex(num - 1);
       }
-    };
+    }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [hasGuessed, isSubmitting, shuffledOptions.length, setSelectedIndex]);
+  }, [hasGuessed, isSubmitting, mcShuffledOptions.length, setSelectedIndex]);
 
   function handleValueChange(value: string): void {
-    const index = shuffledOptions.indexOf(value);
+    const index = mcShuffledOptions.indexOf(value);
     if (index !== -1) {
       setSelectedIndex(index);
     }
@@ -132,7 +129,7 @@ export function MultipleChoiceGuessing({
   }
 
   const selectedValue =
-    selectedIndex !== null ? shuffledOptions[selectedIndex] : undefined;
+    selectedIndex !== null ? mcShuffledOptions[selectedIndex] : undefined;
 
   return (
     <>
@@ -159,7 +156,7 @@ export function MultipleChoiceGuessing({
             className="grid grid-cols-1 sm:grid-cols-2 gap-3"
             disabled={isSubmitting}
           >
-            {shuffledOptions.map((option, index) => (
+            {mcShuffledOptions.map((option, index) => (
               <FieldLabel key={option} htmlFor={`option-${index}`}>
                 <Field
                   orientation="horizontal"
@@ -225,14 +222,10 @@ export function MultipleChoiceReveal({
   const imageUrl = location.imageUrls?.[0];
   const correctName = location.name ?? "";
 
-  // Use server-provided shuffled options and correct index
-  const shuffledOptions = mcShuffledOptions;
-  const correctIndex = mcCorrectIndex;
-
   // Get the user's selection
   const guessedOptionName = guessResult?.guessedOptionName;
   const guessedIndex = guessedOptionName
-    ? shuffledOptions.indexOf(guessedOptionName)
+    ? mcShuffledOptions.indexOf(guessedOptionName)
     : null;
 
   const isCorrect = guessedOptionName === correctName;
@@ -268,8 +261,8 @@ export function MultipleChoiceReveal({
       <Card className="w-full">
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {shuffledOptions.map((option, index) => {
-              const isThisCorrect = index === correctIndex;
+            {mcShuffledOptions.map((option, index) => {
+              const isThisCorrect = index === mcCorrectIndex;
               const isThisSelected = index === guessedIndex;
 
               return (

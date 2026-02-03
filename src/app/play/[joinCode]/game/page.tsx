@@ -530,8 +530,6 @@ function buildLocationData(
     startPointImageUrls: location?.startPointImageUrls,
     startPointLatitude: location?.startPointLatitude,
     startPointLongitude: location?.startPointLongitude,
-    // Multiple Choice mode fields
-    mcOptions: location?.mcOptions,
   };
 }
 
