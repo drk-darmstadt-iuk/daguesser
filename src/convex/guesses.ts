@@ -101,14 +101,12 @@ export const submit = mutation({
     let guessedOptionName: string | undefined;
 
     if (round.mode === "imageToUtm") {
-      // Team guessed UTM coordinates
       if (args.utmEasting === undefined || args.utmNorthing === undefined) {
         throw new Error("UTM coordinates required for this mode");
       }
       guessedUtmEasting = args.utmEasting;
       guessedUtmNorthing = args.utmNorthing;
 
-      // Calculate distance using UTM (same zone assumed for Darmstadt)
       distanceMeters = utmDistance(
         location.utmEasting,
         location.utmNorthing,
@@ -123,14 +121,12 @@ export const submit = mutation({
       round.mode === "utmToLocation" ||
       round.mode === "directionDistance"
     ) {
-      // Team selected location on map
       if (args.latitude === undefined || args.longitude === undefined) {
         throw new Error("Map coordinates required for this mode");
       }
       guessedLatitude = args.latitude;
       guessedLongitude = args.longitude;
 
-      // Validate direction/distance mode location data
       if (round.mode === "directionDistance") {
         if (
           location.bearingDegrees !== undefined &&
@@ -146,7 +142,6 @@ export const submit = mutation({
         }
       }
 
-      // Calculate distance using Haversine
       distanceMeters = haversineDistance(
         location.latitude,
         location.longitude,
@@ -158,22 +153,18 @@ export const submit = mutation({
       timeBonus = calculateTimeBonus(responseTimeMs, round.timeLimit);
       score = calculateTotalScore(distanceScore, timeBonus);
     } else if (round.mode === "multipleChoice") {
-      // Team selected an option
       if (args.mcOptionIndex === undefined || args.mcOptionName === undefined) {
         throw new Error("Option selection required for this mode");
       }
 
-      // Validate option index (0-3)
       if (args.mcOptionIndex < 0 || args.mcOptionIndex > 3) {
         throw new Error("Invalid option index (must be 0-3)");
       }
 
-      // Use stored shuffle from round, with fallback for old rounds
       let shuffledOptions = round.mcShuffledOptions;
       let correctIndex = round.mcCorrectIndex;
 
       if (!shuffledOptions || correctIndex === undefined) {
-        // Backfill for old rounds created before migration
         shuffledOptions = buildShuffledMcOptions(
           location.name,
           location.mcOptions ?? [],
@@ -182,7 +173,6 @@ export const submit = mutation({
         correctIndex = shuffledOptions.indexOf(location.name);
       }
 
-      // Validate that option index matches the option name
       if (shuffledOptions[args.mcOptionIndex] !== args.mcOptionName) {
         throw new Error("Invalid submission: option index does not match name");
       }
@@ -190,11 +180,9 @@ export const submit = mutation({
       guessedOptionIndex = args.mcOptionIndex;
       guessedOptionName = args.mcOptionName;
 
-      // Check if correct using stored index
       const isCorrect = args.mcOptionIndex === correctIndex;
 
-      // For MC mode: correct = base score + time bonus, wrong = 0
-      distanceMeters = 0; // No distance concept in MC mode
+      distanceMeters = 0;
       distanceScore = isCorrect ? MC_CORRECT_BASE_SCORE : 0;
       timeBonus = isCorrect
         ? calculateTimeBonus(responseTimeMs, round.timeLimit)
@@ -204,7 +192,6 @@ export const submit = mutation({
       throw new Error(`Unknown game mode: ${round.mode}`);
     }
 
-    // Create the guess (score is calculated but NOT added to team yet - happens on reveal)
     const guessId = await ctx.db.insert("guesses", {
       roundId: args.roundId,
       teamId: team._id,
@@ -222,13 +209,7 @@ export const submit = mutation({
       submittedAt: Date.now(),
     });
 
-    // NOTE: Team score is NOT updated here - it happens when moderator reveals the round
-    // This keeps the results hidden until the reveal
-
-    return {
-      guessId,
-      // Don't return score/distance to keep it secret until reveal
-    };
+    return { guessId };
   },
 });
 
@@ -251,21 +232,18 @@ export const getForRound = query({
       .withIndex("by_round", (q) => q.eq("roundId", args.roundId))
       .collect();
 
-    // Get team info for each guess and apply backfill for old data
     const guessesWithTeams = await Promise.all(
       guesses.map(async (guess) => {
         const team = await ctx.db.get(guess.teamId);
         return {
           ...guess,
           teamName: team?.name ?? "Unknown",
-          // Backfill for old guesses without score breakdown
           distanceScore: guess.distanceScore ?? guess.score,
           timeBonus: guess.timeBonus ?? 0,
         };
       }),
     );
 
-    // Sort by score descending
     return guessesWithTeams.sort((a, b) => b.score - a.score);
   },
 });
@@ -301,11 +279,9 @@ export const getMyGuess = query({
 
     if (!guess) return null;
 
-    // Only show score and distance after reveal
     const isRevealed =
       round.status === "reveal" || round.status === "completed";
 
-    // Backfill for old guesses without score breakdown
     const distanceScore = guess.distanceScore ?? guess.score;
     const timeBonus = guess.timeBonus ?? 0;
 
@@ -322,7 +298,6 @@ export const getMyGuess = query({
       guessedOptionName: guess.guessedOptionName,
       submittedAt: guess.submittedAt,
       responseTimeMs: guess.responseTimeMs,
-      // Hide score and distance until reveal
       score: isRevealed ? guess.score : undefined,
       distanceScore: isRevealed ? distanceScore : undefined,
       timeBonus: isRevealed ? timeBonus : undefined,

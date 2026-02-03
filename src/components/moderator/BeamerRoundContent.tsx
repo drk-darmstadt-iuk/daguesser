@@ -42,9 +42,7 @@ interface BeamerRoundContentProps {
   allTeamsGuessed?: boolean;
   leaderboard: LeaderboardEntryData[];
   roundGuesses?: RoundGuess[];
-  /** Server-provided shuffled options for MC mode */
   mcShuffledOptions?: string[];
-  /** Server-provided correct index for MC mode (only during reveal) */
   mcCorrectIndex?: number;
 }
 
@@ -319,10 +317,6 @@ function BeamerRevealContent({
           }))
       : [];
 
-  // Use server-provided shuffled options and correct index
-  const shuffledOptions = mcShuffledOptions ?? [];
-  const correctIndex = mcCorrectIndex ?? -1;
-
   return (
     <>
       <h2 className="text-4xl font-bold text-correct">Richtige Antwort</h2>
@@ -330,7 +324,6 @@ function BeamerRevealContent({
         {location?.name ?? "Unbekannt"}
       </h3>
 
-      {/* Map display for utmToLocation and directionDistance */}
       {(mode === "utmToLocation" || mode === "directionDistance") &&
       correctPosition ? (
         <div className="mt-8 w-full max-w-4xl mx-auto">
@@ -344,10 +337,9 @@ function BeamerRevealContent({
           />
         </div>
       ) : mode === "multipleChoice" ? (
-        // Multiple choice options display
         <div className="mt-8 grid grid-cols-2 gap-4 max-w-3xl mx-auto">
-          {shuffledOptions.map((option, index) => {
-            const isCorrect = index === correctIndex;
+          {(mcShuffledOptions ?? []).map((option, index) => {
+            const isCorrect = index === (mcCorrectIndex ?? -1);
             return (
               <div
                 key={option}
@@ -366,7 +358,6 @@ function BeamerRevealContent({
           })}
         </div>
       ) : (
-        // Default: UTM display for imageToUtm
         <UtmDisplay
           utmZone={utm.utmZone}
           easting={utm.utmEasting}

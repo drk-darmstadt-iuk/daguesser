@@ -55,8 +55,6 @@ export interface LocationData {
   startPointImageUrls?: string[];
   startPointLatitude?: number;
   startPointLongitude?: number;
-  // For multiple choice mode
-  mcOptions?: string[];
 }
 
 /**

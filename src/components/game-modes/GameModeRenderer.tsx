@@ -49,9 +49,7 @@ interface GameModeRendererProps {
   mapInputActions?: MapInputActions;
   mcInputState?: MultipleChoiceInputState;
   mcInputActions?: MultipleChoiceInputActions;
-  /** Server-provided shuffled options for MC mode */
   mcShuffledOptions?: string[];
-  /** Server-provided correct index for MC mode (only during reveal) */
   mcCorrectIndex?: number;
 }
 

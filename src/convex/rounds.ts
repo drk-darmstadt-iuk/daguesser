@@ -40,11 +40,10 @@ export const getCurrent = query({
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
-    // Check if in reveal phase (correct answer can be shown)
     const isRevealPhase =
       round.status === "reveal" || round.status === "completed";
 
-    // For MC mode: compute backfill for old rounds that don't have stored shuffle
+    // Backfill for old rounds without stored shuffle
     let mcShuffledOptions = round.mcShuffledOptions;
     let mcCorrectIndex = round.mcCorrectIndex;
 
@@ -62,12 +61,10 @@ export const getCurrent = query({
       location: location
         ? {
             _id: location._id,
-            // Hide correct answer for MC mode until reveal
             name:
               round.mode === "multipleChoice" && !isRevealPhase
                 ? undefined
                 : location.name,
-            // Only include full coordinates during reveal
             ...(isRevealPhase
               ? {
                   latitude: location.latitude,
@@ -77,41 +74,31 @@ export const getCurrent = query({
                   utmZone: location.utmZone,
                 }
               : {}),
-            // Include image URLs for imageToUtm mode
-            ...(round.mode === "imageToUtm"
-              ? { imageUrls: location.imageUrls }
-              : {}),
-            // Include UTM for utmToLocation mode (but only the display parts)
-            ...(round.mode === "utmToLocation"
-              ? {
-                  utmZone: location.utmZone,
-                  utmEasting: location.utmEasting,
-                  utmNorthing: location.utmNorthing,
-                }
-              : {}),
-            // Include direction & distance mode data
-            ...(round.mode === "directionDistance"
-              ? {
-                  bearingDegrees: location.bearingDegrees,
-                  distanceMeters: location.distanceMeters,
-                  startPointName: location.startPointName,
-                  startPointImageUrls: location.startPointImageUrls,
-                  startPointLatitude: location.startPointLatitude,
-                  startPointLongitude: location.startPointLongitude,
-                }
-              : {}),
-            // For multiple choice mode: only include imageUrls, NOT mcOptions (to prevent cheating)
-            ...(round.mode === "multipleChoice"
-              ? { imageUrls: location.imageUrls }
-              : {}),
+            ...(round.mode === "imageToUtm" && {
+              imageUrls: location.imageUrls,
+            }),
+            ...(round.mode === "utmToLocation" && {
+              utmZone: location.utmZone,
+              utmEasting: location.utmEasting,
+              utmNorthing: location.utmNorthing,
+            }),
+            ...(round.mode === "directionDistance" && {
+              bearingDegrees: location.bearingDegrees,
+              distanceMeters: location.distanceMeters,
+              startPointName: location.startPointName,
+              startPointImageUrls: location.startPointImageUrls,
+              startPointLatitude: location.startPointLatitude,
+              startPointLongitude: location.startPointLongitude,
+            }),
+            ...(round.mode === "multipleChoice" && {
+              imageUrls: location.imageUrls,
+            }),
             hint: location.hint,
             difficulty: location.difficulty,
           }
         : null,
-      // Include MC shuffle data at round level
       ...(round.mode === "multipleChoice" && {
         mcShuffledOptions,
-        // Only reveal correct index during reveal phase
         mcCorrectIndex: isRevealPhase ? mcCorrectIndex : undefined,
       }),
       guessCount: guesses.length,
@@ -188,7 +175,6 @@ export const start = mutation({
       throw new Error("Round already started");
     }
 
-    // For multiple choice mode, compute and store the shuffled options
     if (round.mode === "multipleChoice") {
       const location = await ctx.db.get(round.locationId);
       if (!location) {

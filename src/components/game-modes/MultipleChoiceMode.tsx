@@ -24,22 +24,18 @@ import type {
   MultipleChoiceInputState,
 } from "./types";
 
-// Extended props for Multiple Choice mode
 interface MultipleChoiceGuessingProps
   extends Omit<
     GameModeGuessingProps,
     "inputState" | "inputActions" | "mapInputState" | "mapInputActions"
   > {
-  /** Server-provided shuffled options */
   mcShuffledOptions: string[];
   mcInputState?: MultipleChoiceInputState;
   mcInputActions?: MultipleChoiceInputActions;
 }
 
 interface MultipleChoiceRevealProps extends GameModeRevealProps {
-  /** Server-provided shuffled options */
   mcShuffledOptions: string[];
-  /** Server-provided correct answer index */
   mcCorrectIndex: number;
 }
 
@@ -78,7 +74,6 @@ export function MultipleChoiceGuessing({
 }: MultipleChoiceGuessingProps): React.ReactElement {
   const imageUrl = location.imageUrls?.[0];
 
-  // Note: mcInputState and mcInputActions are always provided by GameModeRenderer
   const selectedIndex = mcInputState?.selectedOptionIndex ?? null;
   const isSubmitting = mcInputState?.isSubmitting ?? false;
   const submitError = mcInputState?.submitError ?? null;
@@ -149,7 +144,6 @@ export function MultipleChoiceGuessing({
             Welcher Ort ist das?
           </h3>
 
-          {/* Choice Cards using RadioGroup */}
           <RadioGroup
             value={selectedValue}
             onValueChange={handleValueChange}
@@ -222,7 +216,6 @@ export function MultipleChoiceReveal({
   const imageUrl = location.imageUrls?.[0];
   const correctName = location.name ?? "";
 
-  // Get the user's selection
   const guessedOptionName = guessResult?.guessedOptionName;
   const guessedIndex = guessedOptionName
     ? mcShuffledOptions.indexOf(guessedOptionName)
@@ -257,7 +250,6 @@ export function MultipleChoiceReveal({
         )}
       </LocationRevealCard>
 
-      {/* Show all options with correct/wrong highlighting */}
       <Card className="w-full">
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
