@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useMemo } from "react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { DirectionDistanceDisplay } from "@/components/DirectionDistanceDisplay";
@@ -171,19 +172,14 @@ export function DirectionDistanceReveal({
     [location, utmZone, utmEasting, utmNorthing],
   );
 
-  // Get start position
-  const startPosition = useMemo(() => {
-    if (
-      location.startPointLatitude != null &&
-      location.startPointLongitude != null
-    ) {
-      return {
-        lat: location.startPointLatitude,
-        lng: location.startPointLongitude,
-      };
-    }
-    return null;
-  }, [location.startPointLatitude, location.startPointLongitude]);
+  // Get start position (simple null check, no memoization needed)
+  const startPosition =
+    location.startPointLatitude != null && location.startPointLongitude != null
+      ? {
+          lat: location.startPointLatitude,
+          lng: location.startPointLongitude,
+        }
+      : null;
 
   // Get guessed position
   const guessedPosition =

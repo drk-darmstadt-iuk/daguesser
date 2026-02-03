@@ -61,47 +61,47 @@ export function BeamerRoundContent({
   roundGuesses,
   roundId,
 }: BeamerRoundContentProps): React.ReactElement | null {
-  if (status === "pending") {
-    return <BeamerPendingContent />;
-  }
+  switch (status) {
+    case "pending":
+      return <BeamerPendingContent />;
 
-  if (status === "showing") {
-    return (
-      <BeamerShowingContent
-        mode={mode}
-        location={location}
-        timeLimit={timeLimit}
-      />
-    );
-  }
+    case "showing":
+      return (
+        <BeamerShowingContent
+          mode={mode}
+          location={location}
+          timeLimit={timeLimit}
+        />
+      );
 
-  if (status === "guessing") {
-    return (
-      <BeamerGuessingContent
-        mode={mode}
-        location={location}
-        timeLimit={timeLimit}
-        countdownEndsAt={countdownEndsAt}
-        guessCount={guessCount}
-        totalTeams={totalTeams}
-        allTeamsGuessed={allTeamsGuessed}
-      />
-    );
-  }
+    case "guessing":
+      return (
+        <BeamerGuessingContent
+          mode={mode}
+          location={location}
+          timeLimit={timeLimit}
+          countdownEndsAt={countdownEndsAt}
+          guessCount={guessCount}
+          totalTeams={totalTeams}
+          allTeamsGuessed={allTeamsGuessed}
+        />
+      );
 
-  if (status === "reveal" || status === "completed") {
-    return (
-      <BeamerRevealContent
-        mode={mode}
-        location={location}
-        leaderboard={leaderboard}
-        roundGuesses={roundGuesses}
-        roundId={roundId}
-      />
-    );
-  }
+    case "reveal":
+    case "completed":
+      return (
+        <BeamerRevealContent
+          mode={mode}
+          location={location}
+          leaderboard={leaderboard}
+          roundGuesses={roundGuesses}
+          roundId={roundId}
+        />
+      );
 
-  return null;
+    default:
+      return null;
+  }
 }
 
 function BeamerPendingContent(): React.ReactElement {
@@ -295,22 +295,24 @@ function BeamerRevealContent({
       ? { lat: location.startPointLatitude, lng: location.startPointLongitude }
       : undefined;
 
-  // Build team guesses for map
+  // Build team guesses for map (filter out guesses without coordinates)
   const teamGuesses =
     (mode === "utmToLocation" || mode === "directionDistance") && roundGuesses
-      ? roundGuesses.flatMap((g) => {
-          if (g.guessedLatitude == null || g.guessedLongitude == null) {
-            return [];
-          }
-          return [
-            {
-              teamName: g.teamName,
-              position: { lat: g.guessedLatitude, lng: g.guessedLongitude },
-              score: g.score,
-              distanceMeters: g.distanceMeters,
-            },
-          ];
-        })
+      ? roundGuesses
+          .filter(
+            (
+              g,
+            ): g is RoundGuess & {
+              guessedLatitude: number;
+              guessedLongitude: number;
+            } => g.guessedLatitude != null && g.guessedLongitude != null,
+          )
+          .map((g) => ({
+            teamName: g.teamName,
+            position: { lat: g.guessedLatitude, lng: g.guessedLongitude },
+            score: g.score,
+            distanceMeters: g.distanceMeters,
+          }))
       : [];
 
   // Shuffled options for multiple choice reveal

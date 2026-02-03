@@ -114,27 +114,15 @@ export function UtmToLocationReveal({
     <div className="w-full max-w-2xl flex flex-col gap-4">
       <LocationRevealCard locationName={location.name} />
 
-      {guessedPosition && (
-        <>
-          <LocationSolutionMap
-            correctPosition={correctPosition}
-            guessedPosition={guessedPosition}
-            showDistanceLine
-            showUtmGrid
-          />
+      <LocationSolutionMap
+        correctPosition={correctPosition}
+        guessedPosition={guessedPosition}
+        showDistanceLine={!!guessedPosition}
+        showUtmGrid
+      />
 
-          {guessResult?.distanceMeters != null && (
-            <DistanceDisplay distanceMeters={guessResult.distanceMeters} />
-          )}
-        </>
-      )}
-
-      {!guessedPosition && (
-        <LocationSolutionMap
-          correctPosition={correctPosition}
-          showDistanceLine={false}
-          showUtmGrid
-        />
+      {guessResult?.distanceMeters != null && guessedPosition && (
+        <DistanceDisplay distanceMeters={guessResult.distanceMeters} />
       )}
     </div>
   );

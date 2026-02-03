@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import type React from "react";
+import { useEffect, useMemo } from "react";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
 import { LocationRevealCard } from "@/components/LocationRevealCard";
@@ -107,23 +108,15 @@ export function MultipleChoiceGuessing({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [hasGuessed, isSubmitting, shuffledOptions.length, setSelectedIndex]);
 
-  const handleValueChange = useCallback(
-    (value: string) => {
-      const index = shuffledOptions.indexOf(value);
-      if (index !== -1) {
-        setSelectedIndex(index);
-      }
-    },
-    [shuffledOptions, setSelectedIndex],
-  );
-
-  const handleSubmit = useCallback(async () => {
-    if (selectedIndex === null) return;
-
-    if (mcInputActions?.handleSubmit) {
-      await mcInputActions.handleSubmit();
+  function handleValueChange(value: string): void {
+    const index = shuffledOptions.indexOf(value);
+    if (index !== -1) {
+      setSelectedIndex(index);
     }
-  }, [selectedIndex, mcInputActions]);
+  }
+
+  const handleSubmit =
+    mcInputActions?.handleSubmit ?? (() => Promise.resolve());
 
   if (hasGuessed) {
     return (
