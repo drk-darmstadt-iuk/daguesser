@@ -3,6 +3,7 @@ export type {
   MultipleChoiceInputActions,
   MultipleChoiceInputState,
 } from "@/types/game";
+export { CountdownPreviewCard } from "./CountdownPreviewCard";
 export {
   DirectionDistanceGuessing,
   DirectionDistanceReveal,

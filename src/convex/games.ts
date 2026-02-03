@@ -115,6 +115,40 @@ export const importLocations = mutation({
       throw new Error("Can only import locations in lobby status");
     }
 
+    // Validate mode-specific required fields before creating anything
+    for (let i = 0; i < args.locations.length; i++) {
+      const loc = args.locations[i];
+      for (const mode of args.modes) {
+        if (mode === "directionDistance") {
+          if (
+            loc.bearingDegrees === undefined ||
+            loc.distanceMeters === undefined
+          ) {
+            throw new Error(
+              `Location "${loc.name}": directionDistance mode requires bearingDegrees and distanceMeters`,
+            );
+          }
+          if (loc.bearingDegrees < 0 || loc.bearingDegrees >= 360) {
+            throw new Error(
+              `Location "${loc.name}": bearingDegrees must be 0-359`,
+            );
+          }
+          if (loc.distanceMeters <= 0) {
+            throw new Error(
+              `Location "${loc.name}": distanceMeters must be positive`,
+            );
+          }
+        }
+        if (mode === "multipleChoice") {
+          if (!loc.mcOptions || loc.mcOptions.length !== 3) {
+            throw new Error(
+              `Location "${loc.name}": multipleChoice mode requires exactly 3 wrong options in mcOptions`,
+            );
+          }
+        }
+      }
+    }
+
     // Create locations and rounds
     let roundNumber = 1;
 

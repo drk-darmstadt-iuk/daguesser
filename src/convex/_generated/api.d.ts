@@ -15,6 +15,7 @@ import type * as http from "../http.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as lib_bearing from "../lib/bearing.js";
 import type * as lib_scoring from "../lib/scoring.js";
+import type * as lib_shuffle from "../lib/shuffle.js";
 import type * as rounds from "../rounds.js";
 import type * as teams from "../teams.js";
 
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   leaderboard: typeof leaderboard;
   "lib/bearing": typeof lib_bearing;
   "lib/scoring": typeof lib_scoring;
+  "lib/shuffle": typeof lib_shuffle;
   rounds: typeof rounds;
   teams: typeof teams;
 }>;

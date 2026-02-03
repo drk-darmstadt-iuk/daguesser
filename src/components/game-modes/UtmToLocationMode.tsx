@@ -1,6 +1,6 @@
 "use client";
 
-import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
+import { CountdownTimer } from "@/components/CountdownTimer";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
 import { UtmToLocationMap } from "@/components/game-modes/UtmToLocationMap";
 import { LocationRevealCard } from "@/components/LocationRevealCard";
@@ -9,9 +9,9 @@ import {
   LocationSolutionMap,
 } from "@/components/LocationSolutionMap";
 import { UtmDisplay } from "@/components/UtmDisplay";
-import { Card, CardContent } from "@/components/ui/card";
 import { getCorrectPosition } from "@/lib/location";
 import { extractLocationUtm } from "@/lib/utm-helpers";
+import { CountdownPreviewCard } from "./CountdownPreviewCard";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
@@ -32,13 +32,7 @@ export function UtmToLocationShowing({
         northing={utmNorthing}
         size="lg"
       />
-
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground mb-2">Gleich geht&apos;s los!</p>
-          <CountdownDisplay seconds={timeLimit} size="lg" />
-        </CardContent>
-      </Card>
+      <CountdownPreviewCard timeLimit={timeLimit} />
     </>
   );
 }
@@ -77,53 +71,22 @@ export function UtmToLocationGuessing({
   }
 
   // Map mode - full screen guessing experience
-  if (mapInputState && mapInputActions) {
-    return (
-      <UtmToLocationMap
-        targetUtm={{
-          zone: utmZone,
-          easting: utmEasting,
-          northing: utmNorthing,
-        }}
-        countdownEndsAt={countdownEndsAt}
-        timeLimit={timeLimit}
-        isSubmitting={mapInputState.isSubmitting}
-        submitError={mapInputState.submitError}
-        onPositionChange={mapInputActions.setGuessedPosition}
-        onSubmit={mapInputActions.handleSubmit}
-        className="w-full max-w-2xl"
-      />
-    );
-  }
-
-  // Fallback if map state is not provided
+  // Note: mapInputState and mapInputActions are always provided by GameModeRenderer
   return (
-    <>
-      <UtmDisplay
-        utmZone={utmZone}
-        easting={utmEasting}
-        northing={utmNorthing}
-        size="md"
-      />
-
-      {countdownEndsAt && (
-        <CountdownTimer
-          endsAt={countdownEndsAt}
-          totalSeconds={timeLimit}
-          size="lg"
-        />
-      )}
-
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <p className="text-muted-foreground">
-              Karten-Modus wird geladen...
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </>
+    <UtmToLocationMap
+      targetUtm={{
+        zone: utmZone,
+        easting: utmEasting,
+        northing: utmNorthing,
+      }}
+      countdownEndsAt={countdownEndsAt}
+      timeLimit={timeLimit}
+      isSubmitting={mapInputState?.isSubmitting ?? false}
+      submitError={mapInputState?.submitError ?? null}
+      onPositionChange={mapInputActions?.setGuessedPosition ?? (() => {})}
+      onSubmit={mapInputActions?.handleSubmit ?? (() => Promise.resolve())}
+      className="w-full max-w-2xl"
+    />
   );
 }
 

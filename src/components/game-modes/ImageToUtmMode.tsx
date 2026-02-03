@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { AnswerComparison } from "@/components/AnswerComparison";
-import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
+import { CountdownTimer } from "@/components/CountdownTimer";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
 import { LocationRevealCard } from "@/components/LocationRevealCard";
 import {
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getCorrectPosition, getGuessedPosition } from "@/lib/location";
 import { extractLocationUtm } from "@/lib/utm-helpers";
+import { CountdownPreviewCard } from "./CountdownPreviewCard";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
@@ -34,13 +35,7 @@ export function ImageToUtmShowing({
   return (
     <>
       <RoundImage src={imageUrl} size="lg" withCard />
-
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground mb-2">Gleich geht&apos;s los!</p>
-          <CountdownDisplay seconds={timeLimit} size="lg" />
-        </CardContent>
-      </Card>
+      <CountdownPreviewCard timeLimit={timeLimit} />
     </>
   );
 }

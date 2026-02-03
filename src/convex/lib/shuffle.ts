@@ -1,7 +1,9 @@
 /**
- * Deterministic Shuffle Utilities
+ * Deterministic Shuffle Utilities for Convex Backend
  *
  * Provides seeded random shuffle for consistent ordering across clients.
+ * This is a copy of src/lib/shuffle.ts for use in Convex functions
+ * (Convex cannot import from outside the convex/ folder).
  */
 
 /**
@@ -67,29 +69,4 @@ export function shuffleWithSeed<T>(array: T[], seed: string): T[] {
   }
 
   return result;
-}
-
-/**
- * Build shuffled multiple choice options array.
- *
- * Combines the correct answer with wrong options and shuffles them
- * deterministically using the round ID as seed.
- *
- * @param correctName - The correct location name
- * @param wrongOptions - Array of 3 wrong option names
- * @param roundId - Round ID used as seed for consistent shuffle
- * @returns Shuffled array of 4 options
- *
- * @example
- * ```ts
- * const options = buildShuffledMcOptions("Luisenplatz", ["Marktplatz", "Karolinenplatz", "Riegerplatz"], "round-123");
- * // Returns consistently shuffled array like ["Karolinenplatz", "Luisenplatz", "Marktplatz", "Riegerplatz"]
- * ```
- */
-export function buildShuffledMcOptions(
-  correctName: string,
-  wrongOptions: string[],
-  roundId: string,
-): string[] {
-  return shuffleWithSeed([correctName, ...wrongOptions], roundId);
 }

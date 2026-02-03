@@ -9,6 +9,7 @@ import {
   haversineDistance,
   utmDistance,
 } from "./lib/scoring";
+import { shuffleWithSeed } from "./lib/shuffle";
 
 // Max score for multiple choice correct answers
 const MC_CORRECT_BASE_SCORE = 1000;
@@ -165,6 +166,15 @@ export const submit = mutation({
       // Validate option index (0-3)
       if (args.mcOptionIndex < 0 || args.mcOptionIndex > 3) {
         throw new Error("Invalid option index (must be 0-3)");
+      }
+
+      // Server-side validation: rebuild shuffled options and verify index matches name
+      const mcOptions = location.mcOptions ?? [];
+      const allOptions = [location.name, ...mcOptions];
+      const shuffledOptions = shuffleWithSeed(allOptions, round._id);
+
+      if (shuffledOptions[args.mcOptionIndex] !== args.mcOptionName) {
+        throw new Error("Invalid submission: option index does not match name");
       }
 
       guessedOptionIndex = args.mcOptionIndex;

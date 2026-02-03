@@ -267,6 +267,16 @@ export const reveal = mutation({
       throw new Error("Round must be showing or guessing to reveal");
     }
 
+    // Check if scores were already applied (prevents double-click issues)
+    if (round.scoresApplied) {
+      // Scores already added, just update status to reveal
+      await ctx.db.patch(round._id, {
+        status: "reveal",
+        revealedAt: Date.now(),
+      });
+      return { roundId: round._id };
+    }
+
     // Get all guesses for this round and update team scores
     const guesses = await ctx.db
       .query("guesses")
@@ -289,6 +299,7 @@ export const reveal = mutation({
     await ctx.db.patch(round._id, {
       status: "reveal",
       revealedAt: Date.now(),
+      scoresApplied: true,
     });
 
     return { roundId: round._id };

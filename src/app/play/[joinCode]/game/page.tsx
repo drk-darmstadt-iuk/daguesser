@@ -15,7 +15,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { LeaderboardEntry } from "@/convex/leaderboard";
 import { getDistanceRating } from "@/lib/scoring";
-import { shuffleWithSeed } from "@/lib/shuffle";
+import { buildShuffledMcOptions } from "@/lib/shuffle";
 import {
   calculateFullUtm,
   DARMSTADT_DEFAULTS,
@@ -166,8 +166,11 @@ export default function TeamGame({
         selectedOptionIndex !== null
       ) {
         const mcOptions = currentRound.location?.mcOptions ?? [];
-        const allOptions = [currentRound.location?.name ?? "", ...mcOptions];
-        const shuffledOptions = shuffleWithSeed(allOptions, currentRound._id);
+        const shuffledOptions = buildShuffledMcOptions(
+          currentRound.location?.name ?? "",
+          mcOptions,
+          currentRound._id,
+        );
         const selectedOptionName = shuffledOptions[selectedOptionIndex];
 
         await submitGuess({

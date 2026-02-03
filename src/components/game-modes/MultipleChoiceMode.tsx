@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
+import { useCallback, useEffect, useMemo } from "react";
+import { CountdownTimer } from "@/components/CountdownTimer";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
 import { LocationRevealCard } from "@/components/LocationRevealCard";
 import { RoundImage } from "@/components/RoundImage";
@@ -14,8 +14,9 @@ import {
   FieldTitle,
 } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { shuffleWithSeed } from "@/lib/shuffle";
+import { buildShuffledMcOptions } from "@/lib/shuffle";
 import { cn } from "@/lib/utils";
+import { CountdownPreviewCard } from "./CountdownPreviewCard";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
@@ -57,13 +58,7 @@ export function MultipleChoiceShowing({
   return (
     <>
       <RoundImage src={imageUrl} size="lg" withCard />
-
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground mb-2">Gleich geht&apos;s los!</p>
-          <CountdownDisplay seconds={timeLimit} size="lg" />
-        </CardContent>
-      </Card>
+      <CountdownPreviewCard timeLimit={timeLimit} />
     </>
   );
 }
@@ -85,23 +80,17 @@ export function MultipleChoiceGuessing({
   const wrongOptions = location.mcOptions ?? [];
 
   // Build shuffled options using roundId as seed for consistency
-  const shuffledOptions = useMemo(() => {
-    const allOptions = [correctName, ...wrongOptions];
-    return shuffleWithSeed(allOptions, roundId);
-  }, [correctName, wrongOptions, roundId]);
-
-  // Local selection state (fallback if mcInputState not provided)
-  const [localSelectedIndex, setLocalSelectedIndex] = useState<number | null>(
-    null,
+  const shuffledOptions = useMemo(
+    () => buildShuffledMcOptions(correctName, wrongOptions, roundId),
+    [correctName, wrongOptions, roundId],
   );
-  const [isLocalSubmitting, setIsLocalSubmitting] = useState(false);
 
-  const selectedIndex = mcInputState?.selectedOptionIndex ?? localSelectedIndex;
-  const isSubmitting = mcInputState?.isSubmitting ?? isLocalSubmitting;
+  // Note: mcInputState and mcInputActions are always provided by GameModeRenderer
+  const selectedIndex = mcInputState?.selectedOptionIndex ?? null;
+  const isSubmitting = mcInputState?.isSubmitting ?? false;
   const submitError = mcInputState?.submitError ?? null;
 
-  const setSelectedIndex =
-    mcInputActions?.setSelectedOptionIndex ?? setLocalSelectedIndex;
+  const setSelectedIndex = mcInputActions?.setSelectedOptionIndex ?? (() => {});
 
   // Keyboard shortcuts (1-4)
   useEffect(() => {
@@ -133,8 +122,6 @@ export function MultipleChoiceGuessing({
 
     if (mcInputActions?.handleSubmit) {
       await mcInputActions.handleSubmit();
-    } else {
-      setIsLocalSubmitting(true);
     }
   }, [selectedIndex, mcInputActions]);
 
@@ -251,10 +238,10 @@ export function MultipleChoiceReveal({
   const wrongOptions = location.mcOptions ?? [];
 
   // Rebuild shuffled options to show which was selected
-  const shuffledOptions = useMemo(() => {
-    const allOptions = [correctName, ...wrongOptions];
-    return shuffleWithSeed(allOptions, roundId);
-  }, [correctName, wrongOptions, roundId]);
+  const shuffledOptions = useMemo(
+    () => buildShuffledMcOptions(correctName, wrongOptions, roundId),
+    [correctName, wrongOptions, roundId],
+  );
 
   // Find the correct option index in shuffled array
   const correctIndex = shuffledOptions.indexOf(correctName);

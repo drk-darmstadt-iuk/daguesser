@@ -11,7 +11,7 @@ import { LocationSolutionMap } from "@/components/LocationSolutionMap";
 import { RoundImage } from "@/components/RoundImage";
 import { UtmDisplay } from "@/components/UtmDisplay";
 import { getCorrectPosition } from "@/lib/location";
-import { shuffleWithSeed } from "@/lib/shuffle";
+import { buildShuffledMcOptions } from "@/lib/shuffle";
 import { cn } from "@/lib/utils";
 import { extractLocationUtm } from "@/lib/utm-helpers";
 import { GuessProgress } from "./GuessProgress";
@@ -320,7 +320,7 @@ function BeamerRevealContent({
     if (mode !== "multipleChoice" || !mcOptions || !roundId) {
       return [];
     }
-    return shuffleWithSeed([locationName, ...mcOptions], roundId);
+    return buildShuffledMcOptions(locationName, mcOptions, roundId);
   }, [mode, locationName, mcOptions, roundId]);
 
   const correctIndex = shuffledOptions.indexOf(locationName);

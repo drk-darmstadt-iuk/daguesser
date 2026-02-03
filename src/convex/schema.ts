@@ -116,6 +116,8 @@ const schema = defineSchema(
       startedAt: v.optional(v.number()),
       revealedAt: v.optional(v.number()),
       completedAt: v.optional(v.number()),
+      // Flag to prevent double-applying scores on re-reveal
+      scoresApplied: v.optional(v.boolean()),
     })
       .index("by_game", ["gameId"])
       .index("by_game_and_number", ["gameId", "roundNumber"]),

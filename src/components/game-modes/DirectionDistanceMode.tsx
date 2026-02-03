@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CountdownDisplay, CountdownTimer } from "@/components/CountdownTimer";
+import { CountdownTimer } from "@/components/CountdownTimer";
 import { DirectionDistanceDisplay } from "@/components/DirectionDistanceDisplay";
 import { GuessSubmittedCard } from "@/components/GuessSubmittedCard";
 import { UtmToLocationMap } from "@/components/game-modes/UtmToLocationMap";
@@ -14,6 +14,7 @@ import { RoundImage } from "@/components/RoundImage";
 import { Card, CardContent } from "@/components/ui/card";
 import { getCorrectPosition } from "@/lib/location";
 import { extractLocationUtm } from "@/lib/utm-helpers";
+import { CountdownPreviewCard } from "./CountdownPreviewCard";
 import type {
   GameModeGuessingProps,
   GameModeRevealProps,
@@ -57,12 +58,7 @@ export function DirectionDistanceShowing({
       </Card>
 
       {/* Countdown preview */}
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground mb-2">Gleich geht&apos;s los!</p>
-          <CountdownDisplay seconds={timeLimit} size="lg" />
-        </CardContent>
-      </Card>
+      <CountdownPreviewCard timeLimit={timeLimit} />
     </>
   );
 }
@@ -116,76 +112,42 @@ export function DirectionDistanceGuessing({
   }
 
   // Map mode with direction overlay
-  if (mapInputState && mapInputActions) {
-    return (
-      <div className="w-full max-w-2xl flex flex-col gap-4">
-        {/* Direction info overlay */}
-        <Card className="w-full">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                Von {startPointName}:
-              </span>
-              <DirectionDistanceDisplay
-                bearingDegrees={bearingDegrees}
-                distanceMeters={distanceMeters}
-                size="sm"
-                showLegend={false}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Reuse the interactive map */}
-        <UtmToLocationMap
-          targetUtm={{
-            zone: utmZone,
-            easting: utmEasting,
-            northing: utmNorthing,
-          }}
-          countdownEndsAt={countdownEndsAt}
-          timeLimit={timeLimit}
-          isSubmitting={mapInputState.isSubmitting}
-          submitError={mapInputState.submitError}
-          onPositionChange={mapInputActions.setGuessedPosition}
-          onSubmit={mapInputActions.handleSubmit}
-          className="w-full"
-        />
-      </div>
-    );
-  }
-
-  // Fallback
+  // Note: mapInputState and mapInputActions are always provided by GameModeRenderer
   return (
-    <>
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6">
-          <DirectionDistanceDisplay
-            bearingDegrees={bearingDegrees}
-            distanceMeters={distanceMeters}
-            size="md"
-          />
-        </CardContent>
-      </Card>
-
-      {countdownEndsAt && (
-        <CountdownTimer
-          endsAt={countdownEndsAt}
-          totalSeconds={timeLimit}
-          size="lg"
-        />
-      )}
-
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <p className="text-muted-foreground">
-              Karten-Modus wird geladen...
-            </p>
+    <div className="w-full max-w-2xl flex flex-col gap-4">
+      {/* Direction info overlay */}
+      <Card className="w-full">
+        <CardContent className="py-3">
+          <div className="flex items-center justify-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Von {startPointName}:
+            </span>
+            <DirectionDistanceDisplay
+              bearingDegrees={bearingDegrees}
+              distanceMeters={distanceMeters}
+              size="sm"
+              showLegend={false}
+            />
           </div>
         </CardContent>
       </Card>
-    </>
+
+      {/* Reuse the interactive map */}
+      <UtmToLocationMap
+        targetUtm={{
+          zone: utmZone,
+          easting: utmEasting,
+          northing: utmNorthing,
+        }}
+        countdownEndsAt={countdownEndsAt}
+        timeLimit={timeLimit}
+        isSubmitting={mapInputState?.isSubmitting ?? false}
+        submitError={mapInputState?.submitError ?? null}
+        onPositionChange={mapInputActions?.setGuessedPosition ?? (() => {})}
+        onSubmit={mapInputActions?.handleSubmit ?? (() => Promise.resolve())}
+        className="w-full"
+      />
+    </div>
   );
 }
 
