@@ -60,16 +60,11 @@ function ModeratorDashboard() {
             ) : (
               <div className="space-y-4">
                 {games.map((game) => (
-                  <div
+                  <button
+                    type="button"
                     key={game._id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer w-full text-left"
                     onClick={() => router.push(`/moderator/games/${game._id}`)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      router.push(`/moderator/games/${game._id}`)
-                    }
-                    role="button"
-                    tabIndex={0}
                   >
                     <div className="flex items-center gap-4">
                       <div>
@@ -95,7 +90,7 @@ function ModeratorDashboard() {
                         Öffnen
                       </Button>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

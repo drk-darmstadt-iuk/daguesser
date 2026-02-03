@@ -34,9 +34,12 @@ export function JoinCodeInput({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <label className="text-sm font-medium text-muted-foreground">
+      <span
+        id="join-code-label"
+        className="text-sm font-medium text-muted-foreground"
+      >
         Spiel-Code eingeben
-      </label>
+      </span>
       <InputOTP
         maxLength={6}
         value={value}
@@ -44,6 +47,7 @@ export function JoinCodeInput({
         disabled={disabled}
         autoFocus={autoFocus}
         pattern="[A-Za-z0-9]*"
+        aria-labelledby="join-code-label"
       >
         <InputOTPGroup>
           <InputOTPSlot

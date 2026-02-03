@@ -144,6 +144,9 @@ export function PlanZeiger({
   return (
     <div
       ref={crosshairRef}
+      role="img"
+      aria-roledescription="Verschiebbares Fadenkreuz"
+      aria-label="Ziehe um Position zu wählen"
       className={cn(
         "absolute pointer-events-auto cursor-grab",
         isDragging && "cursor-grabbing",
@@ -163,6 +166,7 @@ export function PlanZeiger({
         width={config.size}
         height={config.size}
         viewBox={`0 0 ${config.size} ${config.size}`}
+        aria-hidden="true"
         className={cn(
           "transition-transform",
           isDragging && "planzeiger-glow scale-110",
@@ -264,6 +268,7 @@ export function CrosshairMarker({
       width={s}
       height={s}
       viewBox="0 0 24 24"
+      aria-hidden="true"
       className={cn(colorConfig[color], className)}
     >
       <circle

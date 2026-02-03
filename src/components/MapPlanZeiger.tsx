@@ -147,6 +147,9 @@ export function MapPlanZeiger({
 
       {/* Crosshair container */}
       <div
+        role="img"
+        aria-roledescription="Verschiebbares Fadenkreuz"
+        aria-label="Ziehe um die Kartenposition zu wählen"
         className={cn(
           "relative pointer-events-auto cursor-grab select-none",
           isDragging && "cursor-grabbing",
@@ -160,6 +163,7 @@ export function MapPlanZeiger({
           width={size}
           height={size}
           viewBox={`0 0 ${size} ${size}`}
+          aria-hidden="true"
           className={cn(
             "transition-transform duration-150",
             isDragging && "planzeiger-glow scale-105",
@@ -288,7 +292,13 @@ export function CrosshairMarkerIcon({
   const strokeColor = colorMap[color];
 
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" className={className}>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      aria-hidden="true"
+      className={className}
+    >
       {/* Outer circle */}
       <circle
         cx={16}

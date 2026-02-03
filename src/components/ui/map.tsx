@@ -789,6 +789,7 @@ function CompassButton({ onClick }: { onClick: () => void }) {
       <svg
         ref={compassRef}
         viewBox="0 0 24 24"
+        aria-hidden="true"
         className="size-5 transition-transform duration-200"
         style={{ transformStyle: "preserve-3d" }}
       >

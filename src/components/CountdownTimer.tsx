@@ -88,6 +88,7 @@ export function CountdownTimer({
         className="absolute transform -rotate-90"
         width={config.size}
         height={config.size}
+        aria-hidden="true"
       >
         <circle
           cx={config.size / 2}
