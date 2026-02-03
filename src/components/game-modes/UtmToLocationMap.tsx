@@ -6,7 +6,7 @@ import { MapPlanZeiger } from "@/components/MapPlanZeiger";
 import { UtmDisplayCompact } from "@/components/UtmDisplay";
 import { UtmGridOverlay } from "@/components/UtmGridOverlay";
 import { Button } from "@/components/ui/button";
-import { Map, MapControls, type MapRef } from "@/components/ui/map";
+import { Map, MapControls, useMap } from "@/components/ui/map";
 import { cn } from "@/lib/utils";
 import { DARMSTADT_CENTER, latLngToUtm } from "@/lib/utm";
 
@@ -33,6 +33,86 @@ interface UtmToLocationMapProps {
   className?: string;
 }
 
+/** Internal component - tracks map center position and updates UTM display */
+function MapPositionTracker({
+  onPositionChange,
+  onUtmChange,
+}: {
+  onPositionChange: (position: { lat: number; lng: number }) => void;
+  onUtmChange: (utm: {
+    zone: string;
+    easting: number;
+    northing: number;
+  }) => void;
+}) {
+  const { map, isLoaded } = useMap();
+
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+
+    const updatePosition = () => {
+      const center = map.getCenter();
+      const utm = latLngToUtm(center.lat, center.lng);
+      onUtmChange({
+        zone: `${utm.zone}${utm.zoneLetter || utm.hemisphere}`,
+        easting: utm.easting,
+        northing: utm.northing,
+      });
+      onPositionChange({ lat: center.lat, lng: center.lng });
+    };
+
+    map.on("moveend", updatePosition);
+    map.on("zoomend", updatePosition);
+    updatePosition();
+
+    return () => {
+      map.off("moveend", updatePosition);
+      map.off("zoomend", updatePosition);
+    };
+  }, [isLoaded, map, onPositionChange, onUtmChange]);
+
+  return null;
+}
+
+/** Internal component - handles planzeiger drag panning */
+function MapPanController({
+  panHandlerRef,
+}: {
+  panHandlerRef: React.MutableRefObject<
+    ((position: { x: number; y: number }) => void) | null
+  >;
+}) {
+  const { map } = useMap();
+
+  const handlePlanZeigerMove = useCallback(
+    (position: { x: number; y: number }) => {
+      if (!map) return;
+
+      const container = map.getContainer();
+      const centerX = container.clientWidth / 2;
+      const centerY = container.clientHeight / 2;
+
+      const deltaX = centerX - position.x;
+      const deltaY = centerY - position.y;
+
+      if (deltaX !== 0 || deltaY !== 0) {
+        map.panBy([deltaX, deltaY], { duration: 0 });
+      }
+    },
+    [map],
+  );
+
+  // Expose the handler to the parent via ref
+  useEffect(() => {
+    panHandlerRef.current = handlePlanZeigerMove;
+    return () => {
+      panHandlerRef.current = null;
+    };
+  }, [panHandlerRef, handlePlanZeigerMove]);
+
+  return null;
+}
+
 /**
  * Interactive map for the utmToLocation game mode.
  *
@@ -49,80 +129,27 @@ export function UtmToLocationMap({
   onSubmit,
   className,
 }: UtmToLocationMapProps) {
-  const mapRef = useRef<MapRef | null>(null);
   const [currentUtm, setCurrentUtm] = useState<{
     zone: string;
     easting: number;
     northing: number;
   } | null>(null);
 
+  // Ref to hold the pan handler from MapPanController
+  const panHandlerRef = useRef<
+    ((position: { x: number; y: number }) => void) | null
+  >(null);
+
   // Derive hasPosition from currentUtm instead of separate state
   const hasPosition = currentUtm !== null;
 
-  // Update current position when map moves
-  const updateCurrentPosition = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const center = map.getCenter();
-    const utm = latLngToUtm(center.lat, center.lng);
-
-    setCurrentUtm({
-      zone: `${utm.zone}${utm.zoneLetter || utm.hemisphere}`,
-      easting: utm.easting,
-      northing: utm.northing,
-    });
-
-    onPositionChange({ lat: center.lat, lng: center.lng });
-  }, [onPositionChange]);
-
-  // Handle position change from MapPlanZeiger (pan the map)
+  // Handle position change from MapPlanZeiger (delegates to MapPanController)
   const handlePlanZeigerMove = useCallback(
     (position: { x: number; y: number }) => {
-      const map = mapRef.current;
-      if (!map) return;
-
-      const container = map.getContainer();
-      const centerX = container.clientWidth / 2;
-      const centerY = container.clientHeight / 2;
-
-      // Calculate delta from center
-      const deltaX = centerX - position.x;
-      const deltaY = centerY - position.y;
-
-      // Only pan if there's actual movement
-      if (deltaX !== 0 || deltaY !== 0) {
-        map.panBy([deltaX, deltaY], { duration: 0 });
-      }
+      panHandlerRef.current?.(position);
     },
     [],
   );
-
-  // Set up map event listeners
-  const handleMapLoad = useCallback(
-    (map: MapRef) => {
-      mapRef.current = map;
-
-      // Update position on map move
-      map.on("moveend", updateCurrentPosition);
-      map.on("zoomend", updateCurrentPosition);
-
-      // Initial position update
-      updateCurrentPosition();
-    },
-    [updateCurrentPosition],
-  );
-
-  // Cleanup map listeners
-  useEffect(() => {
-    return () => {
-      const map = mapRef.current;
-      if (map) {
-        map.off("moveend", updateCurrentPosition);
-        map.off("zoomend", updateCurrentPosition);
-      }
-    };
-  }, [updateCurrentPosition]);
 
   return (
     <div className={cn("flex flex-col gap-4 w-full", className)}>
@@ -138,14 +165,18 @@ export function UtmToLocationMap({
       </div>
 
       {/* Map container */}
-      <div className="relative flex-1 min-h-[350px] md:min-h-[450px] rounded-xl overflow-hidden border border-border">
+      <div className="relative h-[350px] md:h-[450px] rounded-xl overflow-hidden border border-border">
         <Map
-          ref={handleMapLoad}
           center={[DARMSTADT_CENTER.longitude, DARMSTADT_CENTER.latitude]}
           zoom={15}
           minZoom={10}
           maxZoom={18}
         >
+          <MapPositionTracker
+            onPositionChange={onPositionChange}
+            onUtmChange={setCurrentUtm}
+          />
+          <MapPanController panHandlerRef={panHandlerRef} />
           <UtmGridOverlay />
           <MapControls position="bottom-left" showZoom showLocate />
         </Map>
